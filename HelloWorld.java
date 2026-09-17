@@ -8,12 +8,15 @@
  */
 public class HelloWorld {
 
+    /** 问候语 */
+    private static final String GREETING = "Hello, World!";
+
     /**
      * 程序入口方法
      *
      * @param args 命令行参数（未使用）
      */
     public static void main(String[] args) {
-        System.out.println("Hello, World!");
+        System.out.println(GREETING);
     }
 }
