@@ -36,6 +36,10 @@ Web 层（api） → Service 层（service） → DAO 层（dao）
 
 - 接口响应结构统一为 oneapi `{result, msg, data}`，字段名 lowerCamelCase。
 - 错误码集中定义于 `TodoErrorCodeEnum`（TODO_001 ~ TODO_005），禁止在业务代码中散落硬编码。
-- 登录态与租户标识只能通过 `InvokerContext` 从平台登录态获取，禁止由前端入参传入。
-- 创建入口受应急开关 `todo.task.create.enabled` 控制，支持按租户尾号灰度。
+- 登录态与租户标识只能通过 `InvokerContext` 从平台登录态获取，禁止由前端入参传入；
+  平台登录拦截器写入的请求属性由 `TodoInvokerContextInterceptor` 接线，请求结束 `afterCompletion` 清理，
+  身份缺失时 fail-closed（`TODO_002`/`TODO_003`）。
+- 创建入口受应急开关 `todo.task.create.enabled` 控制，支持按租户尾号灰度；
+  开关取值**每次调用实时读取**（不启动期固化），配置推送后免重启/发布生效，默认关闭。
+- 数据库凭证不落明文，由环境变量注入；连接与语句超时均 ≤ 2s；应用时钟时区显式指定为 `Asia/Shanghai`。
 - 日志遵守：占位符输出、不打印事项描述全文、禁止 `System.out` / `printStackTrace`。

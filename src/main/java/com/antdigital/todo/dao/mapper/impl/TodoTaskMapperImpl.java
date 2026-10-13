@@ -29,6 +29,9 @@ public class TodoTaskMapperImpl implements TodoTaskMapper {
             + "(tenant_id, task_name, task_desc, creator, is_deleted, gmt_create, gmt_modified) "
             + "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
+    /** 语句执行超时（秒），与系分 6.3「连接与语句超时（建议 ≤ 2s）」保持一致（G9.2） */
+    private static final int INSERT_QUERY_TIMEOUT_SECONDS = 2;
+
     private final JdbcTemplate jdbcTemplate;
 
     public TodoTaskMapperImpl(JdbcTemplate jdbcTemplate) {
@@ -47,6 +50,7 @@ public class TodoTaskMapperImpl implements TodoTaskMapper {
             statement.setInt(5, todoTask.getIsDeleted());
             statement.setObject(6, todoTask.getGmtCreate());
             statement.setObject(7, todoTask.getGmtModified());
+            statement.setQueryTimeout(INSERT_QUERY_TIMEOUT_SECONDS);
             return statement;
         }, keyHolder);
 

@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -77,6 +79,33 @@ public class TodoExceptionHandler {
     }
 
     /**
+     * 请求方式不支持：协议层错误按参数错误语义返回 TODO_001，与系统异常 TODO_004 区分
+     * （同一字段不得兼表「请求错误」与「系统异常」，G10.1）。
+     *
+     * @param exception 请求方式异常
+     * @return 失败响应
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ApiResult<Void> handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException exception) {
+        LOGGER.warn("todo task create method not supported, method:{}, errorMessage:{}",
+                exception.getMethod(), exception.getMessage());
+        return ApiResult.fail(TodoErrorCodeEnum.PARAM_INVALID, TodoTipConstants.REQUEST_METHOD_UNSUPPORTED);
+    }
+
+    /**
+     * 请求内容类型不支持：协议层错误按参数错误语义返回 TODO_001，与系统异常 TODO_004 区分（G10.1）。
+     *
+     * @param exception 内容类型异常
+     * @return 失败响应
+     */
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ApiResult<Void> handleHttpMediaTypeNotSupported(HttpMediaTypeNotSupportedException exception) {
+        LOGGER.warn("todo task create media type not supported, contentType:{}, errorMessage:{}",
+                exception.getContentType(), exception.getMessage());
+        return ApiResult.fail(TodoErrorCodeEnum.PARAM_INVALID, TodoTipConstants.REQUEST_CONTENT_TYPE_UNSUPPORTED);
+    }
+
+    /**
      * 数据访问异常：返回 TODO_004，ERROR 留痕并告警（系分 6.3/6.5）。
      *
      * @param exception 数据访问异常
@@ -89,7 +118,8 @@ public class TodoExceptionHandler {
     }
 
     /**
-     * 兜底异常：避免异常栈直接暴露给调用方，返回 TODO_004。
+     * 兜底异常：仅收敛系统侧未知异常（协议层异常已由更具体的处理器匹配），
+     * 避免异常栈直接暴露给调用方，统一返回 TODO_004。
      *
      * @param exception 未知异常
      * @return 失败响应

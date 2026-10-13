@@ -17,6 +17,12 @@ public final class TodoTipConstants {
     /** 请求体缺失提示 */
     public static final String REQUEST_REQUIRED = "请求参数不能为空";
 
+    /** 请求方式不支持提示（协议层错误，避免与系统异常语义混用，G10.1） */
+    public static final String REQUEST_METHOD_UNSUPPORTED = "请求方式不支持";
+
+    /** 请求内容类型不支持提示（协议层错误，避免与系统异常语义混用，G10.1） */
+    public static final String REQUEST_CONTENT_TYPE_UNSUPPORTED = "请求内容类型不支持，请使用 application/json";
+
     private TodoTipConstants() {
         throw new IllegalStateException("Utility class");
     }
