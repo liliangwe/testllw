@@ -1,0 +1,25 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: todo-task
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/todo?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: todo
+    password: todo
+    hikari:
+      # 系分 6.3：连接与语句超时保护，避免慢 SQL 拖垮线程池
+      connection-timeout: 2000
+      validation-timeout: 1000
+      maximum-pool-size: 20
+      minimum-idle: 5
+
+todo:
+  task:
+    create:
+      # 系分 7.3 应急开关：一键关闭创建入口，关闭后接口返回 TODO_005
+      enabled: true
+      # 按租户尾号灰度（系分 7.2），为空表示灰度批次全量放通
+      tenant-tail-list: 0,1,2
