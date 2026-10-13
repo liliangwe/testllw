@@ -1,0 +1,24 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: todo-app
+  datasource:
+    url: jdbc:mysql://localhost:3306/todo_db?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8mb4
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jackson:
+    property-naming-strategy: LOWER_CAMEL_CASE
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.todo.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+logging:
+  level:
+    com.example.todo.mapper: DEBUG
