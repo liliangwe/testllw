@@ -19,4 +19,12 @@ public interface TodoItemMapper {
      * @return 影响行数
      */
     int insert(TodoItemDO todoItem);
+
+    /**
+     * 根据请求幂等键查询
+     *
+     * @param requestId 请求幂等键
+     * @return 待办事项实体，未找到返回 null
+     */
+    TodoItemDO findByRequestId(String requestId);
 }

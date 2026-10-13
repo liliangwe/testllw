@@ -5,20 +5,23 @@ import com.example.todo.common.Result;
 import com.example.todo.dto.TodoCreateRequestDTO;
 import com.example.todo.dto.TodoCreateResultDTO;
 import com.example.todo.service.TodoService;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Objects;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 /**
  * TodoController 单元测试
@@ -33,8 +36,13 @@ class TodoControllerTest {
     @Mock
     private TodoService todoService;
 
-    @InjectMocks
     private TodoController todoController;
+
+    @BeforeEach
+    void setUp() {
+        todoController = new TodoController(todoService, new SimpleMeterRegistry());
+        ReflectionTestUtils.setField(todoController, "createEnabled", true);
+    }
 
     // ======================== 正常路径 ========================
 
@@ -81,6 +89,19 @@ class TodoControllerTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("TODO_999", Objects.requireNonNull(response.getBody()).getCode());
+    }
+
+    @Test
+    @DisplayName("功能开关关闭 → 返回 503")
+    void should_return503_when_featureDisabled() {
+        ReflectionTestUtils.setField(todoController, "createEnabled", false);
+        TodoCreateRequestDTO request = buildRequest("测试", "测试");
+
+        ResponseEntity<Result<TodoCreateResultDTO>> response = todoController.createTodo(request);
+
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("TODO_998", response.getBody().getCode());
     }
 
     // ======================== helpers ========================

@@ -1,8 +1,5 @@
 package com.example.todo.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-
 /**
  * 创建待办事项请求 DTO
  *
@@ -12,13 +9,13 @@ import jakarta.validation.constraints.Size;
 public class TodoCreateRequestDTO {
 
     /** 待办名称 */
-    @NotBlank(message = "TODO_001:事项名称不能为空")
-    @Size(max = 200, message = "TODO_002:事项名称不能超过200字符")
     private String name;
 
     /** 待办描述 */
-    @Size(max = 2000, message = "TODO_003:事项描述不能超过2000字符")
     private String description;
+
+    /** 请求幂等键（可选），相同 requestId 的重复请求直接返回已有记录 */
+    private String requestId;
 
     public String getName() {
         return name;
@@ -34,5 +31,13 @@ public class TodoCreateRequestDTO {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getRequestId() {
+        return requestId;
+    }
+
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
     }
 }

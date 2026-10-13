@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 /**
@@ -42,6 +43,16 @@ public class TodoServiceImpl implements TodoService {
         // 参数校验
         validateRequest(request);
 
+        // 幂等性：若提供了 requestId 且已存在，直接返回已有记录
+        String requestId = request.getRequestId();
+        if (requestId != null && !requestId.isBlank()) {
+            TodoItemDO existing = todoItemMapper.findByRequestId(requestId);
+            if (existing != null) {
+                log.info("幂等命中, requestId={}, existingId={}", requestId, existing.getId());
+                return buildResult(existing);
+            }
+        }
+
         try {
             TodoItemDO todoItem = buildTodoItem(request);
             todoItemMapper.insert(todoItem);
@@ -50,6 +61,7 @@ public class TodoServiceImpl implements TodoService {
 
             return buildResult(todoItem);
         } catch (BizException e) {
+            log.trace("BizException re-thrown, code={}", e.getErrorCode(), e);
             throw e;
         } catch (Exception e) {
             log.error("待办事项创建失败, name={}", request.getName(), e);
@@ -83,7 +95,8 @@ public class TodoServiceImpl implements TodoService {
         item.setName(request.getName().trim());
         item.setDescription(request.getDescription());
         item.setStatus(TodoStatus.PENDING.getCode());
-        LocalDateTime now = LocalDateTime.now();
+        item.setRequestId(request.getRequestId());
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Asia/Shanghai"));
         item.setGmtCreate(now);
         item.setGmtModified(now);
         return item;

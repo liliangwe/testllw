@@ -28,6 +28,9 @@ public class TodoItemDO {
     /** 修改时间 */
     private LocalDateTime gmtModified;
 
+    /** 请求幂等键 */
+    private String requestId;
+
     public Long getId() {
         return id;
     }
@@ -74,5 +77,13 @@ public class TodoItemDO {
 
     public void setGmtModified(LocalDateTime gmtModified) {
         this.gmtModified = gmtModified;
+    }
+
+    public String getRequestId() {
+        return requestId;
+    }
+
+    public void setRequestId(String requestId) {
+        this.requestId = requestId;
     }
 }

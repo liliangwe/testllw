@@ -8,14 +8,23 @@
         <result column="name" property="name"/>
         <result column="description" property="description"/>
         <result column="status" property="status"/>
+        <result column="request_id" property="requestId"/>
         <result column="gmt_create" property="gmtCreate"/>
         <result column="gmt_modified" property="gmtModified"/>
     </resultMap>
 
     <insert id="insert" parameterType="com.example.todo.entity.TodoItemDO"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO todo_item (name, description, status, gmt_create, gmt_modified)
-        VALUES (#{name}, #{description}, #{status}, #{gmtCreate}, #{gmtModified})
+        INSERT INTO todo_item (name, description, status, request_id, gmt_create, gmt_modified)
+        VALUES (#{name}, #{description}, #{status}, #{requestId}, #{gmtCreate}, #{gmtModified})
     </insert>
+
+    <select id="findByRequestId" resultMap="BaseResultMap">
+        SELECT id, name, description, status, request_id, gmt_create, gmt_modified
+        FROM todo_item
+        WHERE request_id = #{requestId}
+          AND request_id IS NOT NULL
+        LIMIT 1
+    </select>
 
 </mapper>

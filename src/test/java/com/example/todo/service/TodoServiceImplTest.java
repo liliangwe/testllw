@@ -15,9 +15,15 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * TodoServiceImpl 单元测试
@@ -193,5 +199,48 @@ class TodoServiceImplTest {
                 () -> todoService.createTodo(validRequest));
         assertEquals("TODO_999", ex.getErrorCode());
         assertTrue(ex.getMessage().contains("系统内部错误"));
+    }
+
+    // ======================== 幂等性 ========================
+
+    @Test
+    @DisplayName("提供 requestId 且已存在 → 直接返回已有记录，不执行 insert")
+    void should_returnExistingRecord_when_requestIdExists() {
+        validRequest.setRequestId("req-001");
+        TodoItemDO existing = new TodoItemDO();
+        existing.setId(5L);
+        existing.setName("已有待办");
+        existing.setDescription("已有描述");
+        existing.setStatus("PENDING");
+        existing.setGmtCreate(java.time.LocalDateTime.now());
+        existing.setGmtModified(java.time.LocalDateTime.now());
+
+        when(todoItemMapper.findByRequestId("req-001")).thenReturn(existing);
+
+        TodoCreateResultDTO result = todoService.createTodo(validRequest);
+
+        assertNotNull(result);
+        assertEquals(5L, result.getId());
+        assertEquals("已有待办", result.getName());
+        verify(todoItemMapper, never()).insert(any());
+    }
+
+    @Test
+    @DisplayName("提供 requestId 且不存在 → 正常创建")
+    void should_createNormally_when_requestIdNotExists() {
+        validRequest.setRequestId("req-002");
+
+        when(todoItemMapper.findByRequestId("req-002")).thenReturn(null);
+        when(todoItemMapper.insert(any(TodoItemDO.class))).thenAnswer(inv -> {
+            TodoItemDO item = inv.getArgument(0);
+            item.setId(10L);
+            return 1;
+        });
+
+        TodoCreateResultDTO result = todoService.createTodo(validRequest);
+
+        assertNotNull(result);
+        assertEquals(10L, result.getId());
+        verify(todoItemMapper).insert(any(TodoItemDO.class));
     }
 }
