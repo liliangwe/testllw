@@ -1,0 +1,40 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: todo-task
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 系分 6.3：连接与语句超时保护（连接获取、Socket 读、语句执行均 ≤ 2s），避免慢 SQL 拖垮线程池
+    url: "jdbc:mysql://127.0.0.1:3306/todo?useUnicode=true&characterEncoding=utf8&useSSL=false&\
+      serverTimezone=Asia/Shanghai&connectTimeout=2000&socketTimeout=2000"
+    # 凭证外部化：由部署环境注入（TODO_DB_USERNAME / TODO_DB_PASSWORD），仓库内不落明文口令（安全规约 S9.1）
+    username: ${TODO_DB_USERNAME}
+    password: ${TODO_DB_PASSWORD}
+    hikari:
+      # 系分 6.3：连接获取与校验超时，避免慢 SQL 拖垮线程池
+      connection-timeout: 2000
+      validation-timeout: 1000
+      maximum-pool-size: 20
+      minimum-idle: 5
+
+todo:
+  time:
+    # 应用侧时钟时区显式指定，须与数据源 serverTimezone 保持一致，禁止依赖容器默认时区（M016/G14.3）
+    zone: Asia/Shanghai
+  invoker:
+    # 系分 6.4.2.3 登录态接线：平台全局登录拦截器校验票据后将身份写入请求属性，由本模块拦截器接入上下文
+    # 若部署环境已由平台统一接线，可置为 false 关闭本模块拦截器
+    enabled: true
+    # 创建人请求属性名（平台约定可覆盖，禁止信任前端可直接伪造的入参）
+    invoker-attribute: todo.invoker
+    # 租户标识请求属性名（平台约定可覆盖）
+    tenant-attribute: todo.tenant-id
+  task:
+    create:
+      # 系分 7.3 应急开关：默认关闭（由灰度批次显式开启），一键关闭后接口返回 TODO_005
+      # 开关在每次调用时实时读取，配置中心推送/刷新后无需重启或重新发布即生效（配置推送 ≤ 30s）
+      enabled: false
+      # 按租户尾号灰度（系分 7.2），为空表示灰度批次全量放通
+      tenant-tail-list: 0,1,2
