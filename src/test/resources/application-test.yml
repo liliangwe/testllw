@@ -1,0 +1,21 @@
+# 测试环境配置：使用 H2 内存数据库（MySQL 兼容模式），测试数据不落盘、不依赖外部服务
+spring:
+  datasource:
+    url: jdbc:h2:mem:todo_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.todo.dao.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+logging:
+  level:
+    com.example.todo: debug
