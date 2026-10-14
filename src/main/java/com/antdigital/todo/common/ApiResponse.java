@@ -17,6 +17,13 @@ public class ApiResponse<T> {
     private ApiResponse() {
     }
 
+    /**
+     * 构造成功响应。
+     *
+     * @param data 业务数据
+     * @param <T>  数据类型
+     * @return 成功响应
+     */
     public static <T> ApiResponse<T> ok(T data) {
         ApiResponse<T> response = new ApiResponse<>();
         response.result = "OK";
@@ -25,6 +32,14 @@ public class ApiResponse<T> {
         return response;
     }
 
+    /**
+     * 构造失败响应。
+     *
+     * @param result 结果码
+     * @param msg    提示信息
+     * @param <T>    数据类型
+     * @return 失败响应
+     */
     public static <T> ApiResponse<T> fail(String result, String msg) {
         ApiResponse<T> response = new ApiResponse<>();
         response.result = result;
