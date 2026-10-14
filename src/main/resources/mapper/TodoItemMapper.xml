@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.todo.dao.mapper.TodoItemMapper">
+
+    <!-- 新增待办事项，自增主键回填至 id -->
+    <insert id="saveTodoItem" parameterType="com.example.todo.dao.entity.TodoItemDO"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO todo_item (tenant_id, name, description, gmt_create, gmt_modified)
+        VALUES (#{tenantId}, #{name}, #{description}, #{gmtCreate}, #{gmtModified})
+    </insert>
+
+</mapper>
