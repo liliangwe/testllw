@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import string
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -70,6 +72,45 @@ def add_task(
     return task
 
 
+def build_parser() -> argparse.ArgumentParser:
+    """构建命令行参数解析器。"""
+    parser = argparse.ArgumentParser(
+        prog="todo",
+        description="日常待办事项管理工具",
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    add_parser = subparsers.add_parser("add", help="新增待办事项")
+    add_parser.add_argument(
+        "-n", "--name",
+        required=True,
+        help="事项名称",
+    )
+    add_parser.add_argument(
+        "-d", "--description",
+        default="",
+        help="事项描述",
+    )
+    return parser
+
+
 def main() -> None:
-    """CLI 入口，由 pyproject.toml 的 console_scripts 调用。"""
-    pass
+    """CLI 入口。"""
+    parser = build_parser()
+    try:
+        args = parser.parse_args()
+    except SystemExit as exc:
+        if exc.code != 0:
+            sys.exit(1)
+        sys.exit(0)
+
+    if args.command != "add":
+        parser.print_help(sys.stderr)
+        sys.exit(1)
+
+    try:
+        task = add_task(name=args.name, description=args.description)
+    except ValueError as exc:
+        print(f"❌ {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"✅ 已添加待办: {task['name']}")
