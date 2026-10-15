@@ -1,5 +1,7 @@
 """Todo CLI 入口模块。"""
 
+from __future__ import annotations
+
 import json
 import os
 import string
