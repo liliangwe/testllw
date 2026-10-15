@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "todo-cli"
+version = "0.1.0"
+description = "日常待办事项管理工具"
+requires-python = ">=3.9"
+
+[project.scripts]
+todo = "todo_cli.main:main"
