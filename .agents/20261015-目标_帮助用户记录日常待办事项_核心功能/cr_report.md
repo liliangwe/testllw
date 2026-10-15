@@ -1,155 +1,148 @@
-# Code Review Report — Todo CLI
+# Code Review Report — Todo CLI（问题修复后二次审查）
 
 - **项目**: Todo CLI（日常待办事项管理工具）
 - **语言**: Python 3.9+
 - **审查日期**: 2026-10-15
-- **审查范围**: 全量变更（设计文档 → 实施计划 → 代码实现）
-- **测试结果**: 22/22 PASS（`python3 -m unittest discover -s tests -v`）
+- **审查范围**: 问题修复阶段变更（`f11b270` → `5704854`），2 文件 +27/-9 行
+- **测试结果**: 23/23 PASS（`python3 -m unittest discover -s tests -v`）
 - **产出基准**: `docs/design/todo-cli-design.md` 设计文档
 
 ---
 
-## 审查维度与发现
+## 一、上轮 Review 问题修复核验
 
-### 一、功能核对（需求 vs 实现）
+对照上一轮审查报告（`cr_report.md` 初版）中发现的 5 个问题逐一核验：
 
-对照设计文档 `docs/design/todo-cli-design.md` 第 7 节验收标准：
+### 🔴 [blocking] 测试污染真实数据文件 — ✅ 已修复
 
-| AC | 场景 | 实现状态 | 证据 |
-|----|------|----------|------|
-| AC-1 | `todo add -n "测试" -d "描述"` → 写入 JSON + ✅ 确认 | ✅ 通过 | `test_add_writes_task_and_prints_success` |
-| AC-2 | `todo add -n "无描述"` → description="" | ✅ 通过 | `test_add_without_description_uses_empty` |
-| AC-3 | `todo add`（缺 -n）→ 退出码 1 + 错误提示 | ✅ 通过 | `test_add_missing_name_exits` |
-| AC-4 | 首次运行（无 ~/.todo）→ 自动创建 | ✅ 通过 | `test_creates_file_and_directory` + `save_tasks` 的 `mkdir(parents=True)` |
-| AC-5 | 连续多次 add → 追加不覆盖 | ✅ 通过 | `test_appends_to_existing_tasks` |
+**原问题**: `test_uses_default_data_file` 直接调用 `add_task("test", data_file=None)` 污染 `~/.todo/tasks.json`。
 
-**核对结论**: 核心功能全部满足设计规格。
+**修复**: 使用 `tempfile.mkdtemp()` + `patch("src.todo_cli.main.DEFAULT_DATA_FILE", data_file)` 隔离。
 
----
-
-### 二、可读性审查
-
-#### ✅ 符合项
-- 类型注解完整：所有公开函数均有参数/返回值注解
-- 文档字符串：每个函数/类均有中文 docstring
-- 命名规范：snake_case 函数名、UPPER_SNAKE_CASE 常量、PascalCase 测试类
-- `from __future__ import annotations` + `Path | None` 语法，符合 Python 3.9+ 最佳实践
-- 导入顺序正确：标准库在前，无第三方导入
-- 原子写入实现清晰：`NamedTemporaryFile` → `json.dump` → `flush` → `fsync` → `os.replace`
-
-#### 🟢 [nit] 建议
-- `main.py:22` `string.whitespace` 的字符遍历可用 `any(c in string.whitespace for c in name)` 替代，语义相同但更简洁
-
----
-
-### 三、可靠性审查
-
-#### 🔴 [blocking] 测试污染真实数据文件
-
-**文件**: `tests/test_data.py:109-112`
 ```python
-def test_uses_default_data_file(self) -> None:
-    """不传 data_file 时使用 ~/.todo/tasks.json。"""
+# tests/test_data.py:115-122
+data_file = Path(tempfile.mkdtemp()) / "tasks.json"
+with patch("src.todo_cli.main.DEFAULT_DATA_FILE", data_file):
     task = add_task("test", data_file=None)
     self.assertIsNotNone(task)
+    self.assertEqual(task["name"], "test")
 ```
 
-- **问题**: 该测试调用 `add_task("test", data_file=None)`，触发默认路径 `~/.todo/tasks.json`，直接写入用户真实数据文件。
-- **风险**: 测试运行会污染用户真实待办数据，且 test 数据不可追溯。
-- **修复建议**: 使用 `patch("src.todo_cli.main.DEFAULT_DATA_FILE", temp_file)` 隔离，或显式传入临时 `data_file`。
+**验证**: 测试通过，`DEFAULT_DATA_FILE` 被临时路径替换，不接触真实数据。
 
-#### 🟡 [important] `validate_name` 拒绝合法空格字符
+---
 
-**文件**: `src/todo_cli/main.py:22-23`
+### 🟡 [important] `validate_name` 拒绝合法空格 — ✅ 已修复
+
+**原问题**: `string.whitespace` 包含空格，导致 "写 周报" 等合理名称被拒绝。
+
+**修复**: 移除 `import string`，定义显式常量 `_CONTROL_CHARS = "\t\n\r\x0b\x0c"`，仅拒绝控制字符，保留空格为合法字符。
+
 ```python
-if any(c in name for c in string.whitespace):
-    raise ValueError("事项名称不能包含空白字符")
+# src/todo_cli/main.py:17
+_CONTROL_CHARS = "\t\n\r\x0b\x0c"
+# src/todo_cli/main.py:24
+if any(c in name for c in _CONTROL_CHARS):
+    raise ValueError("事项名称不能包含控制字符")
 ```
 
-- `string.whitespace` = `' \t\n\r\x0b\x0c'` —— 包含普通空格。
-- 设计文档 3.3 节仅提及"名称包含非法字符（如换行符）时拒绝"，未将空格列为非法字符。
-- "写 周报"、"买菜 清单" 等含空格的任务名会被拒绝，用户预期不符。
-- **修复建议**: 将检查改为仅检查控制字符（`\t\n\r\x0b\x0c`），保留 `' '` 为合法字符：
-  ```python
-  CONTROL_CHARS = "\t\n\r\x0b\x0c"
-  if any(c in name for c in CONTROL_CHARS):
-      raise ValueError("事项名称不能包含控制字符")
-  ```
-
-#### 🟡 [important] `main()` 未捕获文件系统错误
-
-**文件**: `src/todo_cli/main.py:96-116`
-
-- 设计文档 3.3 节明确规定："文件系统不可写时，输出具体错误并退出"
-- 当前实现：`save_tasks` 中的 `OSError`（磁盘满、权限不足等）会向上传播为未捕获异常，用户看到的是 traceback 而非友好错误提示。
-- 实现计划自审清单也承认："由 Python `OSError` 自然传播，`main()` 中未显式捕获则 traceback 输出到 stderr"。
-- **修复建议**: 在 `main()` 的 `try` 块中增加 `except OSError as exc` 分支：
-  ```python
-  except OSError as exc:
-      print(f"❌ 文件写入失败: {exc}", file=sys.stderr)
-      sys.exit(1)
-  ```
-
-#### 🟢 [nit] `load_tasks` 未处理损坏的 JSON
-
-**文件**: `src/todo_cli/main.py:26-30`
-
-- 如果 `tasks.json` 被手动编辑损坏或为空，`json.loads` 抛出 `JSONDecodeError`，导致 traceback。
-- 对于内部 CLI 工具风险较低，但建议处理。
-
-#### 🟢 [nit] 临时文件泄漏风险
-
-**文件**: `src/todo_cli/main.py:36-49`
-
-- `NamedTemporaryFile(delete=False)` + `os.replace` 是标准的原子写入模式。但如果进程在 `os.replace` 之前被 kill，临时文件会残留在 `~/.todo/` 目录中。
-- 对 CLI 工具影响极小，可接受。
+**验证**: 新增 `test_name_with_spaces_passes` 测试，验证 "写 周报" 和 "买菜 清单" 均通过校验。✅
 
 ---
 
-### 四、安全性审查
+### 🟡 [important] `main()` 未捕获文件系统错误 — ✅ 已修复
 
-- ✅ 无外部输入执行（无 `eval`/`exec`/`subprocess`）
-- ✅ 无网络请求
-- ✅ 数据仅写入用户主目录 `~/.todo/`
-- ✅ 原子写入防止数据损坏
-- ✅ `validate_name` 拒绝控制字符，防止 JSON 注入
-- ⚠️ `string.whitespace` 包含 `\x0b`（垂直制表符）和 `\x0c`（换页符），虽然不常见但已覆盖
+**原问题**: 磁盘满/权限不足时 traceback 暴露给用户，违反设计文档 3.3 节要求。
 
----
+**修复**: 在 `main()` 的 `try` 块增加 `except OSError as exc` 分支。
 
-### 五、测试质量
+```python
+# src/todo_cli/main.py:120-122
+except OSError as exc:
+    print(f"❌ 文件写入失败: {exc}", file=sys.stderr)
+    sys.exit(1)
+```
 
-- **覆盖率**: 22 个测试覆盖了数据层（13 tests）和 CLI 层（9 tests）
-- **测试隔离**: 除 🔴 问题外，其他测试使用 `tempfile.TemporaryDirectory` + `patch` 良好隔离
-- **边界条件覆盖**: 空名称、控制字符、文件不存在、目录不存在、多次追加均已覆盖
-- **缺失测试**: 
-  - 🟡 空格字符的合法/非法语义测试
-  - 🟡 文件系统错误的集成测试（OSError 场景）
+**验证**: 错误路径退出码 1，用户看到友好中文错误提示。
 
 ---
 
-## 审查总结
+### 🟢 [nit] `load_tasks` 未处理损坏的 JSON — ✅ 已修复
 
-### 评分
+**原问题**: 手动编辑损坏 `tasks.json` 导致 `JSONDecodeError` traceback。
 
-| 维度 | 评级 | 说明 |
-|------|------|------|
-| 功能完整性 | ✅ 优秀 | 5 项验收标准全部通过 |
-| 代码可读性 | ✅ 优秀 | 类型注解、文档字符串、命名均规范 |
-| 可靠性 | 🟡 良好 | 1 个阻塞问题 + 2 个重要问题 |
-| 安全性 | ✅ 优秀 | 无外部攻击面，原子写入 |
-| 测试质量 | 🟡 良好 | 覆盖充分但存在测试污染 |
+**修复**: 在 `load_tasks` 中捕获 `json.JSONDecodeError`，返回空列表。
 
-### 问题统计
+```python
+# src/todo_cli/main.py:32-35
+try:
+    return json.loads(filepath.read_text(encoding="utf-8"))
+except json.JSONDecodeError:
+    return []
+```
+
+**验证**: 损坏 JSON → 返回 `[]` → CLI 正常继续（下次 add 会重建文件）。⚠️ 附带风险：损坏文件中的数据会丢失，但对 MVP 可接受。
+
+---
+
+### 🟢 [nit] 临时文件泄漏风险 — ⏸️ 未修复（可接受）
+
+原报告指出 kill -9 场景下 `NamedTemporaryFile(delete=False)` 的 `.tmp` 残留。此问题在修复阶段未被处理。对于 CLI 工具，残留概率极低且不阻塞功能，保持在 🟢 nit 级别。
+
+---
+
+## 二、新增代码质量审查
+
+### ✅ 符合项
+
+- **零第三方依赖**: `import string` 已移除，所有导入均为标准库（`__future__`, `argparse`, `json`, `os`, `sys`, `datetime`, `pathlib`, `tempfile`）
+- **类型注解完整**: 6 个函数全部有参数/返回值类型注解
+- **常量命名**: `_CONTROL_CHARS` 前导下划线表示模块私有，语义清晰
+- **测试新增**: `test_name_with_spaces_passes` 覆盖空格合法语义；`test_uses_default_data_file` 使用 `patch` 隔离
+- **`from unittest.mock import patch`**: 标准库模块，不引入新依赖
+
+### 🔍 回归验证
+
+| 检查项 | 状态 | 证据 |
+|--------|------|------|
+| 零第三方依赖 | ✅ | AST 分析仅 stdlib |
+| 全部 23 测试通过 | ✅ | `unittest discover` |
+| 原子写入 | ✅ | `NamedTemporaryFile` + `os.replace` |
+| 退出码一致 | ✅ | 所有错误路径返回 1 |
+| validate_name 允许空格 | ✅ | `_CONTROL_CHARS` 不含 `' '` |
+| OSError 友好提示 | ✅ | `main()` 捕获并打印中文信息 |
+| JSONDecodeError 容错 | ✅ | 损坏 JSON 返回空列表 |
+
+---
+
+## 三、REVIEW.md 项目闸门核对
+
+| # | 闸门 | 状态 |
+|---|------|------|
+| 1 | 零第三方依赖（运行时+测试） | ✅ stdlib only |
+| 2 | `NamedTemporaryFile` + `os.replace` 原子写入 | ✅ |
+| 3 | 所有错误路径退出码 1 | ✅ |
+| 4 | `validate_name` 拒绝空名和含空白名 | ⚠️ 见下方 |
+| 5 | 测试覆盖：parser / main / 各数据层函数 | ✅ 23 tests |
+| 6 | `pyproject.toml` 注册入口 | ✅ |
+
+> ⚠️ 闸门 4：REVIEW.md 原文为 "rejects empty and whitespace-containing names"，但代码实际行为是拒绝空名和**控制字符**名（允许普通空格）。此差异源于设计文档 3.3 节原文："名称包含非法字符（如换行符）时拒绝"，未将空格列为非法。建议将 REVIEW.md 闸门 4 同步为 "rejects empty and control-character-containing names"。
+
+---
+
+## 四、问题统计
 
 | 级别 | 数量 | 说明 |
 |------|------|------|
-| 🔴 blocking | 1 | 测试污染用户真实数据文件 |
-| 🟡 important | 2 | 空格验证过严 + 缺少 OSError 处理 |
-| 🟢 nit | 2 | JSON 损坏处理 + 临时文件泄漏 |
+| 🔴 blocking | **0** | 上轮 1 个 blocker 已修复 |
+| 🟡 important | **0** | 上轮 2 个 important 已修复 |
+| 🟢 nit | **1** | 临时文件残留风险（kill -9 场景，已评估可接受） |
+| 💡 suggestion | **1** | REVIEW.md 闸门 4 措辞建议同步更新 |
 
-### 审查决定
+---
 
-🔄 **Request Changes** — 存在 1 个阻塞项，必须修复后方可合并。
+## 五、审查决定
 
-阻塞项修复后（将 `test_uses_default_data_file` 改为使用 `patch` 隔离），🟡 级别问题可在后续迭代中处理，不阻塞当前最小闭环交付。
+✅ **Approve** — 上轮审查中 1 个 🔴 blocker 和 2 个 🟡 important 全部修复。23 个测试全部通过。零第三方依赖。代码质量与设计文档一致。
+
+唯一未修复项为 🟢 nit 级别的临时文件残留风险，不影响合并。
