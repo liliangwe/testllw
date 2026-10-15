@@ -5,6 +5,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from src.todo_cli.main import add_task, load_tasks, save_tasks, validate_name
 
@@ -35,6 +36,11 @@ class TestValidateName(unittest.TestCase):
         """含回车符抛 ValueError。"""
         with self.assertRaises(ValueError):
             validate_name("hello\rworld")
+
+    def test_name_with_spaces_passes(self) -> None:
+        """含普通空格的名称合法。"""
+        validate_name("写 周报")
+        validate_name("买菜 清单")
 
 
 class TestLoadTasks(unittest.TestCase):
@@ -107,9 +113,13 @@ class TestAddTask(unittest.TestCase):
             self.assertEqual(tasks[1]["name"], "第二项")
 
     def test_uses_default_data_file(self) -> None:
-        """不传 data_file 时使用 ~/.todo/tasks.json。"""
-        task = add_task("test", data_file=None)
-        self.assertIsNotNone(task)
+        """不传 data_file 时使用 ~/.todo/tasks.json（隔离测试，不污染真实数据）。"""
+        import tempfile
+        data_file = Path(tempfile.mkdtemp()) / "tasks.json"
+        with patch("src.todo_cli.main.DEFAULT_DATA_FILE", data_file):
+            task = add_task("test", data_file=None)
+            self.assertIsNotNone(task)
+            self.assertEqual(task["name"], "test")
 
     def test_rejects_invalid_name(self) -> None:
         """非法名称（空/含控制字符）抛 ValueError。"""

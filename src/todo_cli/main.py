@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import string
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,20 +13,26 @@ from tempfile import NamedTemporaryFile
 DEFAULT_DATA_DIR = Path.home() / ".todo"
 DEFAULT_DATA_FILE = DEFAULT_DATA_DIR / "tasks.json"
 
+# 事项名称中禁止出现的控制字符（保留普通空格 ' ' 为合法字符）
+_CONTROL_CHARS = "\t\n\r\x0b\x0c"
+
 
 def validate_name(name: str) -> None:
-    """校验事项名称：非空且不含控制字符。"""
+    """校验事项名称：非空且不含控制字符（空格合法）。"""
     if not name:
         raise ValueError("事项名称不能为空")
-    if any(c in name for c in string.whitespace):
-        raise ValueError("事项名称不能包含空白字符")
+    if any(c in name for c in _CONTROL_CHARS):
+        raise ValueError("事项名称不能包含控制字符")
 
 
 def load_tasks(filepath: Path) -> list[dict]:
-    """从 JSON 文件加载任务列表，文件不存在时返回空列表。"""
+    """从 JSON 文件加载任务列表，文件不存在或损坏时返回空列表。"""
     if not filepath.exists():
         return []
-    return json.loads(filepath.read_text(encoding="utf-8"))
+    try:
+        return json.loads(filepath.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return []
 
 
 def save_tasks(filepath: Path, tasks: list[dict]) -> None:
@@ -111,6 +116,9 @@ def main() -> None:
         task = add_task(name=args.name, description=args.description)
     except ValueError as exc:
         print(f"❌ {exc}", file=sys.stderr)
+        sys.exit(1)
+    except OSError as exc:
+        print(f"❌ 文件写入失败: {exc}", file=sys.stderr)
         sys.exit(1)
 
     print(f"✅ 已添加待办: {task['name']}")
