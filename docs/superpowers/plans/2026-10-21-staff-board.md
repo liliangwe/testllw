@@ -46,8 +46,10 @@ src/main/java/com/example/todo/staff/
   dto/PageVO.java                  分页结果容器
   dto/ImportResultVO.java          导入汇总结果
   dto/ImportFailureVO.java         导入单行失败明细
+  common/StaffErrorCodes.java      业务错误码常量
   service/StaffService.java        员工服务接口
   service/impl/StaffServiceImpl.java
+  service/impl/CsvImporter.java    CSV 批量导入器（白名单校验）
   controller/StaffController.java  员工 REST 控制器
 src/main/resources/
   mapper/StaffMapper.xml
@@ -57,6 +59,7 @@ src/main/resources/
   application.yml                  （追加 staff.* 配置）
 src/test/java/com/example/todo/staff/
   service/StaffServiceImplTest.java
+  service/impl/CsvImporterTest.java
   controller/StaffControllerTest.java
   mapper/StaffMapperTest.java
 ```
@@ -944,7 +947,10 @@ git commit -m "feat(staff): add staff DTOs and page container"
 **Files:**
 - Create: `src/main/java/com/example/todo/staff/service/StaffService.java`
 - Create: `src/main/java/com/example/todo/staff/service/impl/StaffServiceImpl.java`
+- Create: `src/main/java/com/example/todo/staff/service/impl/CsvImporter.java`
+- Create: `src/main/java/com/example/todo/staff/common/StaffErrorCodes.java`
 - Test: `src/test/java/com/example/todo/staff/service/StaffServiceImplTest.java`
+- Test: `src/test/java/com/example/todo/staff/service/impl/CsvImporterTest.java`
 
 **Interfaces:**
 - Consumes: Task 2 的 Mapper 方法、Task 3 的 DTO。
@@ -1000,6 +1006,7 @@ package com.example.todo.staff.service.impl;
 
 import com.example.todo.staff.common.StaffErrorCodes;
 import com.example.todo.common.BizException;
+import com.example.todo.staff.dto.ImportResultVO;
 import com.example.todo.staff.dto.PageVO;
 import com.example.todo.staff.dto.StaffDetailVO;
 import com.example.todo.staff.dto.StaffPageQuery;
@@ -1035,10 +1042,12 @@ public class StaffServiceImpl implements StaffService {
 
     private final StaffMapper staffMapper;
     private final StaffBudgetMapper budgetMapper;
+    private final CsvImporter csvImporter;
 
-    public StaffServiceImpl(StaffMapper staffMapper, StaffBudgetMapper budgetMapper) {
+    public StaffServiceImpl(StaffMapper staffMapper, StaffBudgetMapper budgetMapper, CsvImporter csvImporter) {
         this.staffMapper = staffMapper;
         this.budgetMapper = budgetMapper;
+        this.csvImporter = csvImporter;
     }
 
     @Override
@@ -1110,7 +1119,7 @@ public class StaffServiceImpl implements StaffService {
 
     @Override
     public ImportResultVO importCsv(String account, String csvText) {
-        return new CsvImporter(staffMapper, budgetMapper).doImport(csvText);
+        return csvImporter.doImport(account, csvText);
     }
 
     // ---------- 校验 ----------
@@ -1513,28 +1522,7 @@ public class CsvImporter {
 }
 ```
 
-- [ ] **Step 5: 将 CsvImporter 注入 StaffServiceImpl**（重构 importCsv）
-
-将 `StaffServiceImpl` 中的 `importCsv` 改为调用 `CsvImporter`：
-
-```java
-    private final CsvImporter csvImporter;
-
-    public StaffServiceImpl(StaffMapper staffMapper, StaffBudgetMapper budgetMapper, CsvImporter csvImporter) {
-        this.staffMapper = staffMapper;
-        this.budgetMapper = budgetMapper;
-        this.csvImporter = csvImporter;
-    }
-
-    @Override
-    public ImportResultVO importCsv(String account, String csvText) {
-        return csvImporter.doImport(account, csvText);
-    }
-```
-
-> 对应类头部的 import 需补充 `import com.example.todo.staff.dto.ImportResultVO;`（Task 4 Step 1 已含）。
-
-- [ ] **Step 6: 编写 Service 单元测试（Mock Mapper）**
+- [ ] **Step 5: 编写 Service 单元测试（Mock Mapper）**
 
 ```java
 package com.example.todo.staff.service;
@@ -1704,7 +1692,7 @@ class StaffServiceImplTest {
 }
 ```
 
-- [ ] **Step 7: 编写 CsvImporter 单测（白名单 + 解析）**
+- [ ] **Step 6: 编写 CsvImporter 单测（白名单 + 解析）**
 
 ```java
 package com.example.todo.staff.service.impl;
@@ -1815,12 +1803,12 @@ class CsvImporterTest {
 }
 ```
 
-- [ ] **Step 8: 运行测试验证通过**
+- [ ] **Step 7: 运行测试验证通过**
 
 Run: `mvn -q -Dtest=StaffServiceImplTest,CsvImporterTest test`
 Expected: BUILD SUCCESS，所有用例通过。
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add src/main/java/com/example/todo/staff/service/ src/main/java/com/example/todo/staff/common/ src/test/java/com/example/todo/staff/service/
