@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>山鸟在林间飞翔 · Workbench 内容清单</title>
+<style>
+  :root {
+    --ink: #1E2A2E;
+    --ink-soft: #4A5A5E;
+    --mist-blue: #2E4A62;
+    --forest: #3E6B4F;
+    --gold: #E8A85C;
+    --paper: #F7EFE6;
+    --paper-deep: #EFE3D5;
+    --card: #FFFFFF;
+    --line: rgba(30,42,46,.14);
+    --serif: "Noto Serif SC","Source Han Serif SC","Songti SC","SimSun",Georgia,serif;
+    --sans: "Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei",-apple-system,sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    font-family:var(--sans);
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 500px at 15% -5%, rgba(232,168,92,.18), transparent 60%),
+      radial-gradient(1000px 600px at 95% 0%, rgba(62,107,79,.10), transparent 55%),
+      var(--paper);
+    line-height:1.55;
+  }
+  .wrap { max-width:1180px; margin:0 auto; padding:40px 32px 80px; }
+
+  /* ── Hero ─────────────────────────────── */
+  .hero { display:flex; justify-content:space-between; align-items:flex-end; gap:20px; flex-wrap:wrap;
+    border-bottom:1px solid var(--line); padding-bottom:28px; margin-bottom:24px; }
+  .hero h1 { font-family:var(--serif); font-size:30px; letter-spacing:.02em; font-weight:700; }
+  .hero .sub { margin-top:8px; color:var(--ink-soft); font-size:14px; }
+  .specs { display:flex; gap:10px; flex-wrap:wrap; }
+  .spec {
+    border:1px solid var(--line); background:var(--card); border-radius:10px;
+    padding:8px 14px; text-align:center; min-width:88px;
+  }
+  .spec b { display:block; font-size:19px; font-family:var(--serif); color:var(--mist-blue); }
+  .spec span { font-size:11px; color:var(--ink-soft); }
+
+  /* ── Timeline ─────────────────────────── */
+  .tl { margin:8px 0 6px; }
+  .tl-label { display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft); margin-bottom:6px; }
+  .tl-bar { display:flex; height:64px; border-radius:12px; overflow:hidden;
+    border:1px solid var(--line); background:var(--card); cursor:pointer; box-shadow:0 2px 10px rgba(30,42,46,.06); }
+  .tl-seg { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:1px;
+    color:#fff; font-size:12px; transition:filter .15s, transform .15s; }
+  .tl-seg:hover { filter:brightness(1.08); transform:scaleY(1.02); }
+  .tl-seg .n { font-family:var(--serif); font-weight:700; font-size:14px; }
+  .tl-seg .d { font-size:10px; opacity:.85; }
+  .tl-legend { display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:8px; font-size:12px; color:var(--ink-soft); }
+  .tl-legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+
+  /* ── Scene cards ──────────────────────── */
+  .sec-title { display:flex; align-items:baseline; gap:12px; margin:36px 0 14px; }
+  .sec-title h2 { font-family:var(--serif); font-size:21px; }
+  .sec-title .en { font-size:12px; color:var(--ink-soft); letter-spacing:.14em; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:18px; }
+  .card {
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    overflow:hidden; box-shadow:0 3px 14px rgba(30,42,46,.05); display:flex; flex-direction:column;
+  }
+  .card-head { padding:14px 18px; color:#fff; position:relative; }
+  .card-head .tag { font-family:var(--serif); font-size:15px; font-weight:700; letter-spacing:.04em; }
+  .card-head .meta { font-size:11px; margin-top:3px; opacity:.9; }
+  .card-body { padding:14px 18px 16px; display:flex; flex-direction:column; gap:10px; flex:1; font-size:13px; }
+  .row b { display:block; font-size:11px; letter-spacing:.06em; color:var(--ink-soft); margin-bottom:4px; }
+  .chk { list-style:none; }
+  .chk li { position:relative; padding-left:18px; margin-top:3px; }
+  .chk li::before { content:"✔"; position:absolute; left:0; color:var(--forest); font-size:11px; top:2px; }
+  .anim { color:var(--ink); }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; }
+  .chip {
+    font-size:11px; font-family:ui-monospace,Menlo,Consolas,monospace;
+    border:1px solid var(--line); background:#F6F1E9; border-radius:6px; padding:2px 8px; color:#35506B;
+  }
+  .trans { display:inline-block; font-size:11px; padding:3px 9px; border-radius:20px; background:rgba(232,168,92,.16); color:#8a5b1f; border:1px solid rgba(232,168,92,.4); }
+
+  /* ── Palette / files ──────────────────── */
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; }
+  .swatches { display:flex; flex-wrap:wrap; gap:14px; }
+  .sw { border:1px solid var(--line); border-radius:10px; overflow:hidden; width:150px; box-shadow:0 2px 8px rgba(30,42,46,.05); }
+  .sw .c { height:46px; }
+  .sw .t { padding:7px 9px; font-size:11px; }
+  .sw .t b { display:block; font-size:12px; }
+  .sw .t span { color:var(--ink-soft); font-family:ui-monospace,monospace; }
+  .filetree { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; line-height:1.75; }
+  .filetree .dir { color:var(--ink); font-weight:600; }
+  .filetree .file { color:#35506B; }
+  .filetree .note { color:var(--ink-soft); font-family:var(--sans); font-size:11.5px; }
+
+  /* ── Gate ─────────────────────────────── */
+  .gate { margin-top:48px; border:1px solid rgba(232,168,92,.55); background:linear-gradient(180deg,#FFFBF4,#FBEFDF);
+    border-radius:18px; padding:28px; text-align:center; }
+  .gate h2 { font-family:var(--serif); font-size:22px; margin-bottom:6px; }
+  .gate p { color:var(--ink-soft); font-size:13px; max-width:720px; margin:0 auto 18px; }
+  .gate .btns { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+  .btn { font-family:var(--sans); font-size:14px; padding:11px 26px; border-radius:10px; border:1px solid var(--line); cursor:pointer; background:var(--card); color:var(--ink); transition:.15s; }
+  .btn.ok { background:var(--forest); color:#fff; border-color:var(--forest); }
+  .btn.ok:hover { filter:brightness(1.08); }
+  .btn.no:hover { background:#f3e6d8; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  #gateResult { margin-top:14px; font-size:13px; min-height:20px; font-weight:600; }
+  #gateResult.yes { color:var(--forest); }
+  #gateResult.no  { color:#b03a2e; }
+
+  footer { margin-top:40px; text-align:center; font-size:11px; color:var(--ink-soft); }
+  .back2top { text-align:right; font-size:12px; }
+  .back2top a { color:var(--mist-blue); text-decoration:none; }
+  @media print {
+    body { background:#fff; }
+    .gate, .back2top, .tl-bar { display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ══════════ HERO ══════════ -->
+  <header class="hero">
+    <div>
+      <h1>山鸟在林间飞翔 · 可视化内容清单</h1>
+      <p class="sub">Workbench 门禁 — 依据 brief.md 转译。请在浏览器核对「场景 / 时长 / 内容 / 动画 / 源文件」理解是否一致。</p>
+    </div>
+    <div class="specs">
+      <div class="spec"><b>60s</b><span>成片时长</span></div>
+      <div class="spec"><b>1800</b><span>总帧数</span></div>
+      <div class="spec"><b>30fps</b><span>帧率</span></div>
+      <div class="spec"><b>1920×1080</b><span>16:9 画幅</span></div>
+    </div>
+  </header>
+
+  <!-- ══════════ TIMELINE ══════════ -->
+  <div class="tl">
+    <div class="tl-label"><span>片头（慢）</span><span>中段动势（中快）</span><span>收束（慢）</span></div>
+    <div class="tl-bar" id="tlbar">
+      <div class="tl-seg" style="width:6.67%; background:linear-gradient(160deg,#2E4A62,#3A5670)" data-tgt="s0"><span class="n">S0</span><span class="d">4s · 1–120</span></div>
+      <div class="tl-seg" style="width:13.3%; background:linear-gradient(160deg,#2E4A62,#3E6B4F)" data-tgt="s1"><span class="n">S1</span><span class="d">8s · 121–360</span></div>
+      <div class="tl-seg" style="width:23.3%; background:linear-gradient(160deg,#3E6B4F,#5a8a63)" data-tgt="s2"><span class="n">S2</span><span class="d">14s · 361–780</span></div>
+      <div class="tl-seg" style="width:20%;  background:linear-gradient(160deg,#4f7d97,#7aa3b8)" data-tgt="s3"><span class="n">S3</span><span class="d">12s · 781–1140</span></div>
+      <div class="tl-seg" style="width:20%;  background:linear-gradient(160deg,#c98a4a,#E8A85C)" data-tgt="s4"><span class="n">S4</span><span class="d">12s · 1141–1500</span></div>
+      <div class="tl-seg" style="width:10%;  background:linear-gradient(160deg,#E8A85C,#F7EFE6)" data-tgt="s5"><span class="n">S5</span><span class="d">6s · 1501–1680</span></div>
+      <div class="tl-seg" style="width:6.67%; background:repeating-linear-gradient(45deg,#d9c9b5,#d9c9b5 6px,#cdbba4 6px,#cdbba4 12px)" data-tgt="s6"><span class="n" style="color:var(--ink-soft)">留白</span><span class="d" style="color:var(--ink-soft)">4s · 1681–1800</span></div>
+    </div>
+    <div class="tl-legend">
+      <span><i style="background:#2E4A62"></i>S0–S1 晨雾冷青</span>
+      <span><i style="background:#3E6B4F"></i>S2 林间绿</span>
+      <span><i style="background:#4f7d97"></i>S3 高空湛蓝</span>
+      <span><i style="background:#E8A85C"></i>S4 暖金夕照</span>
+      <span><i style="background:#F7EFE6;border:1px solid #d9c9b5"></i>S5 落版暖白</span>
+      <span><i style="background:repeating-linear-gradient(45deg,#d9c9b5,#d9c9b5 3px,#cdbba4 3px,#cdbba4 6px)"></i>呼吸留白（压尾）</span>
+    </div>
+  </div>
+
+  <!-- ══════════ SCENES ══════════ -->
+  <div class="sec-title"><h2>一、场景清单（场景 / 时长 / 内容 / 动画 / 源文件）</h2><span class="en">SCENE INVENTORY</span></div>
+  <div class="grid">
+
+    <!-- S0 -->
+    <article class="card" id="s0">
+      <div class="card-head" style="background:linear-gradient(160deg,#2E4A62,#3A5670)">
+        <div class="tag">S0 · 片头 Hook</div>
+        <div class="meta">4s ｜ 帧 1–120 ｜ 转场：淡入 ｜ 氛围：晨雾冷青</div>
+      </div>
+      <div class="card-body">
+        <div><span class="trans">淡入 · 渐显</span></div>
+        <div class="row"><b>内容 CHECKLIST</b>
+          <ul class="chk"><li>晨曦微光穿透林雾</li><li>一声清脆鸟鸣（音频提示）</li><li>片名浮现</li><li>环境层铺陈冷青基调</li></ul>
+        </div>
+        <div class="row"><b>动画 / 镜头</b><div class="anim">镜头微推近 → 片名淡入渐显；晨雾缓慢流动，光束斜扫</div></div>
+        <div class="row"><b>对应源文件</b>
+          <div class="chips">
+            <span class="chip">scenes/Scene0_Hook.tsx</span><span class="chip">components/FX/LightRay.tsx</span>
+            <span class="chip">components/Background/Mist.tsx</span><span class="chip">components/UI/Title.tsx</span>
+            <span class="chip">components/FX/Particles.tsx</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- S1 -->
+    <article class="card" id="s1">
+      <div class="card-head" style="background:linear-gradient(160deg,#2E4A62,#3E6B4F)">
+        <div class="tag">S1 · 晨雾起飞</div>
+        <div class="meta">8s ｜ 帧 121–360 ｜ 转场：镜头推近→起跳 ｜ 氛围：冷青转入林绿</div>
+      </div>
+      <div class="card-body">
+        <div><span class="trans">镜头推近 → 起跳</span></div>
+        <div class="row"><b>内容 CHECKLIST</b>
+          <ul class="chk"><li>枝头特写：山鸟立于枝头</li><li>振翅离枝、起跳瞬间</li><li>羽毛细节 / 逆光轮廓</li><li>羽翼循环扇动 4–6 Hz</li></ul>
+        </div>
+        <div class="row"><b>动画 / 镜头</b><div class="anim">近景推近为起跳蓄势；Wing 组件 4–6Hz 循环扇动；缓动 easeInOutCubic</div></div>
+        <div class="row"><b>对应源文件</b>
+          <div class="chips">
+            <span class="chip">scenes/Scene1_Takeoff.tsx</span><span class="chip">components/Bird/Bird.tsx</span>
+            <span class="chip">components/Bird/Wing.tsx</span><span class="chip">components/Bird/Feather.tsx</span>
+            <span class="chip">components/Background/Forest.tsx</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- S2 -->
+    <article class="card" id="s2">
+      <div class="card-head" style="background:linear-gradient(160deg,#3E6B4F,#5a8a63)">
+        <div class="tag">S2 · 穿枝过叶</div>
+        <div class="meta">14s ｜ 帧 361–780 ｜ 转场：速度线衔接 ｜ 氛围：林间绿 · 光斑</div>
+      </div>
+      <div class="card-body">
+        <div><span class="trans">速度线衔接</span></div>
+        <div class="row"><b>内容 CHECKLIST</b>
+          <ul class="chk"><li>跟拍：鸟在林间穿梭</li><li>光斑（Bokeh）扫过画面</li><li>枝叶虚化掠过（视差前景）</li><li>微尘粒子随镜头运动</li></ul>
+        </div>
+        <div class="row"><b>动画 / 镜头</b><div class="anim">横向跟拍横移；多层 Bokeh 柔光（saturate+blur）斜扫；前景枝叶视差模糊</div></div>
+        <div class="row"><b>对应源文件</b>
+          <div class="chips">
+            <span class="chip">scenes/Scene2_Weave.tsx</span><span class="chip">components/Foreground/LeafLayer.tsx</span>
+            <span class="chip">components/Foreground/Bokeh.tsx</span><span class="chip">components/Foreground/Particles.tsx</span>
+            <span class="chip">components/FX/CameraRig.tsx</span><span class="chip">components/Bird/Bird.tsx</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- S3 -->
+    <article class="card" id="s3">
+      <div class="card-head" style="background:linear-gradient(160deg,#4f7d97,#7aa3b8)">
+        <div class="tag">S3 · 滑翔俯瞰</div>
+        <div class="meta">12s ｜ 帧 781–1140 ｜ 转场：拉开全景 ｜ 氛围：高空湛蓝 · 留白</div>
+      </div>
+      <div class="card-body">
+        <div><span class="trans">拉开全景</span></div>
+        <div class="row"><b>内容 CHECKLIST</b>
+          <ul class="chk"><li>高空俯瞰：群山林海</li><li>鸟呈优雅滑翔姿态</li><li>翼展稳定、留白构图</li><li>环境层决定色调与深度</li></ul>
+        </div>
+        <div class="row"><b>动画 / 镜头</b><div class="anim">拉升俯瞰（俯角变化）；飞行轨迹用贝塞尔平滑曲线；滑翔翼展平稳</div></div>
+        <div class="row"><b>对应源文件</b>
+          <div class="chips">
+            <span class="chip">scenes/Scene3_Glide.tsx</span><span class="chip">components/Bird/Bird.tsx</span>
+            <span class="chip">components/Background/Sky.tsx</span><span class="chip">components/Background/Forest.tsx</span>
+            <span class="chip">components/FX/CameraRig.tsx</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- S4 -->
+    <article class="card" id="s4">
+      <div class="card-head" style="background:linear-gradient(160deg,#c98a4a,#E8A85C)">
+        <div class="tag">S4 · 群鸟归林</div>
+        <div class="meta">12s ｜ 帧 1141–1500 ｜ 转场：汇聚→归巢 ｜ 氛围：暖金夕照</div>
+      </div>
+      <div class="card-body">
+        <div><span class="trans">汇聚 → 归巢</span></div>
+        <div class="row"><b>内容 CHECKLIST</b>
+          <ul class="chk"><li>多鸟结伴归林</li><li>掠过树冠（Forest）</li><li>暖金夕照光晕</li><li>全局记忆点：光斑收束</li></ul>
+        </div>
+        <div class="row"><b>动画 / 镜头</b><div class="anim">多鸟汇聚回收；夕照金辉渐变天色；树冠作为参考平面掠过</div></div>
+        <div class="row"><b>对应源文件</b>
+          <div class="chips">
+            <span class="chip">scenes/Scene4_Return.tsx</span><span class="chip">components/Bird/Bird.tsx</span>
+            <span class="chip">components/Background/Sky.tsx</span><span class="chip">components/Background/Forest.tsx</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- S5 -->
+    <article class="card" id="s5">
+      <div class="card-head" style="background:linear-gradient(160deg,#E8A85C,#F7EFE6)">
+        <div class="tag" style="color:var(--ink)">S5 · 片尾落版</div>
+        <div class="meta" style="color:#5a4a38">6s ｜ 帧 1501–1680 ｜ 转场：淡出 ｜ 氛围：落版暖白</div>
+      </div>
+      <div class="card-body">
+        <div><span class="trans">淡出收尾</span></div>
+        <div class="row"><b>内容 CHECKLIST</b>
+          <ul class="chk"><li>金句字幕浮现</li><li>片尾落版（片名）</li><li>余韵留白收尾</li><li>整体淡出</li></ul>
+        </div>
+        <div class="row"><b>动画 / 镜头</b><div class="anim">金句 56px 衬线淡入；落版暖白底 + 墨色文案；末尾整体淡出</div></div>
+        <div class="row"><b>对应源文件</b>
+          <div class="chips">
+            <span class="chip">scenes/Scene5_Outro.tsx</span><span class="chip">components/UI/Title.tsx</span>
+            <span class="chip">components/UI/Subtitle.tsx</span><span class="chip">components/Background/Mist.tsx</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- S-whitespace -->
+    <article class="card" id="s6" style="border-style:dashed">
+      <div class="card-head" style="background:repeating-linear-gradient(45deg,#d9c9b5,#d9c9b5 8px,#cdbba4 8px,#cdbba4 16px); color:var(--ink)">
+        <div class="tag">呼吸留白（压尾）</div>
+        <div class="meta" style="color:#5a4a38">4s ｜ 帧 1681–1800 ｜ 节奏缓冲，避免信息过载</div>
+      </div>
+      <div class="card-body">
+        <div class="row"><b>内容</b><div class="anim">并入各场景转场，压尾缓冲；无新增叙事信息</div></div>
+        <div class="row"><b>动画 / 镜头</b><div class="anim">低饱和雾面渐变，微尘粒子持续漂浮；节奏「慢—中快—慢」曲线末端回落</div></div>
+        <div class="row"><b>对应源文件</b>
+          <div class="chips"><span class="chip">config.ts（节拍偏移）</span><span class="chip">components/FX/Particles.tsx</span></div>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <!-- ══════════ LAYERS ══════════ -->
+  <div class="sec-title"><h2>二、镜头 / 内容层级</h2><span class="en">LAYER SYSTEM</span></div>
+  <div class="panel">
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+      <thead><tr style="text-align:left; color:var(--ink-soft); font-size:12px;">
+        <th style="padding:6px 8px; border-bottom:1px solid var(--line);">层级</th>
+        <th style="padding:6px 8px; border-bottom:1px solid var(--line);">职责 &amp; 对应组件</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:8px; border-bottom:1px dashed var(--line); width:120px;"><b>环境层</b></td><td style="border-bottom:1px dashed var(--line);">天空渐变 / 林海剪影 / 雾霭 — 决定色调与深度</td></tr>
+        <tr><td style="padding:8px; border-bottom:1px dashed var(--line);"><b>主体层</b></td><td style="border-bottom:1px dashed var(--line);">山鸟（羽翼 / 身体 <span style="font-family:ui-monospace,monospace">Bird.Wing</span> 独立组件，可循环扇动）</td></tr>
+        <tr><td style="padding:8px; border-bottom:1px dashed var(--line);"><b>前景层</b></td><td style="border-bottom:1px dashed var(--line);">枝叶虚化前景、光斑 — 强化跟拍速度感</td></tr>
+        <tr><td style="padding:8px;"><b>文案层</b></td><td>片名、金句字幕 — S0 / S5 出现</td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:14px; font-size:12px; color:var(--ink-soft);"><b>声音指引层</b>：情绪节拍标注，交付给后续音效环节（如 <span style="font-family:ui-monospace,monospace">audio/sound_guide.md</span>）。</div>
+  </div>
+
+  <!-- ══════════ PALETTE ══════════ -->
+  <div class="sec-title"><h2>三、视觉规范（色板 · 字体 · 节奏）</h2><span class="en">VISUAL SPEC</span></div>
+  <div class="panel">
+    <div class="swatches">
+      <div class="sw"><div class="c" style="background:#2E4A62"></div><div class="t"><b>晨雾冷青</b><span>#2E4A62</span></div></div>
+      <div class="sw"><div class="c" style="background:#3E6B4F"></div><div class="t"><b>林间绿</b><span>#3E6B4F</span></div></div>
+      <div class="sw"><div class="c" style="background:#E8A85C"></div><div class="t"><b>晨曦暖金</b><span>#E8A85C</span></div></div>
+      <div class="sw"><div class="c" style="background:#F4EBDD"></div><div class="t"><b>羽色高亮</b><span>#F4EBDD</span></div></div>
+      <div class="sw"><div class="c" style="background:#1E2A2E"></div><div class="t"><b>文案墨色</b><span>#1E2A2E</span></div></div>
+      <div class="sw"><div class="c" style="background:#F7EFE6"></div><div class="t"><b>落版暖白</b><span>#F7EFE6</span></div></div>
+    </div>
+    <div style="margin-top:16px; font-size:13px; color:var(--ink-soft);">
+      <b style="color:var(--ink)">字体</b> 标题/金句 · 思源宋体 Noto Serif SC（72px 片名 / 56px 金句）；辅助小字 · 思源黑体 Noto Sans SC（28px）。<br>
+      <b style="color:var(--ink)">节奏</b> 慢（0–12s）→ 中快（12–38s）→ 慢（38–60s）；关键动效起止统一写入 <span style="font-family:ui-monospace,monospace">config.ts</span>。
+    </div>
+  </div>
+
+  <!-- ══════════ FILE MAP ══════════ -->
+  <div class="sec-title"><h2>四、工程源文件清单（Remotion）</h2><span class="en">SOURCE FILE MAP</span></div>
+  <div class="panel">
+    <pre class="filetree">testllw/
+├── <span class="dir">src/</span>
+│   ├── <span class="file">index.ts</span>                    <span class="note">入口 · registerRoot(Root)</span>
+│   ├── <span class="file">Root.tsx</span>                    <span class="note">组合注册 · &lt;Composition&gt; + 转场编排</span>
+│   ├── <span class="file">config.ts</span>                   <span class="note">时长/帧区间/缓动节拍常量（D1,D8 落点）</span>
+│   ├── <span class="file">palette.ts</span>                  <span class="note">色板常量（D3 品牌/氛围色统一）</span>
+│   ├── <span class="dir">scenes/</span>
+│   │   ├── <span class="file">Scene0_Hook.tsx</span>  <span class="file">Scene1_Takeoff.tsx</span>  <span class="file">Scene2_Weave.tsx</span>
+│   │   ├── <span class="file">Scene3_Glide.tsx</span> <span class="file">Scene4_Return.tsx</span>  <span class="file">Scene5_Outro.tsx</span>
+│   ├── <span class="dir">components/</span>
+│   │   ├── <span class="dir">Bird/</span>     <span class="file">Bird.tsx</span> · <span class="file">Wing.tsx</span>（扇动） · <span class="file">Feather.tsx</span>（细节）
+│   │   ├── <span class="dir">Background/</span> <span class="file">Sky.tsx</span> · <span class="file">Forest.tsx</span> · <span class="file">Mist.tsx</span>
+│   │   ├── <span class="dir">Foreground/</span> <span class="file">LeafLayer.tsx</span>（视差） · <span class="file">Bokeh.tsx</span>（光斑） · <span class="file">Particles.tsx</span>
+│   │   └── <span class="dir">FX/</span>       <span class="file">LightRay.tsx</span> · <span class="file">CameraRig.tsx</span>（推/移/拉）
+│   ├── <span class="dir">UI/</span>       <span class="file">Title.tsx</span>（片名 72px） · <span class="file">Subtitle.tsx</span>（金句 56px / 辅助 28px）
+│   └── <span class="dir">audio/</span>   <span class="file">sound_guide.md</span>  <span class="note">声音指引层（鸟鸣/情绪节拍）</span>
+├── <span class="file">package.json</span>                 <span class="note">remotion · @remotion/cli · react</span>
+└── <span class="file">remotion.config.ts</span>          <span class="note">1920×1080 · 30fps</span></pre>
+  </div>
+
+  <!-- ══════════ GATE ══════════ -->
+  <div class="gate" id="gate">
+    <h2>结构门禁 · 需你在浏览器确认</h2>
+    <p>请核对以上「场景 / 时长 / 内容 / 动画 / 对应源文件」是否与期望一致。<br>
+       下方选择你的判断（选择结果会记录在本页，可随时刷新重选）。</p>
+    <div class="btns">
+      <button class="btn ok" id="btnOk">✔ 结构一致，进入下一节点</button>
+      <button class="btn no" id="btnNo">✘ 结构不一致，需要调整</button>
+    </div>
+    <div id="gateResult"></div>
+    <input type="hidden" id="gateState" value="">
+  </div>
+
+  <div class="back2top"><a href="#top">↑ 回到顶部</a></div>
+  <footer>Workbench v1 · 门禁状态：待浏览器确认 · 确认前不进入「生成 workbench 后的下一节点」</footer>
+</div>
+
+<script>
+  (function () {
+    var bar = document.getElementById('tlbar');
+    bar.querySelectorAll('.tl-seg').forEach(function (seg) {
+      seg.addEventListener('click', function () {
+        var t = document.getElementById(seg.getAttribute('data-tgt'));
+        if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    });
+
+    var stateEl = document.getElementById('gateState');
+    var resEl   = document.getElementById('gateResult');
+    var btnOk   = document.getElementById('btnOk');
+    var btnNo   = document.getElementById('btnNo');
+
+    function apply(state) {
+      stateEl.value = state;
+      if (state === 'ok') {
+        resEl.className = 'yes';
+        resEl.textContent = '✔ 结构已确认。请在对话中回复「结构确认」，即可推进到下一节点。';
+        btnOk.disabled = true; btnNo.disabled = false;
+      } else if (state === 'no') {
+        resEl.className = 'no';
+        resEl.textContent = "✘ 结构不一致。请在对话中说明需调整的点（如：某场景时长、内容、动画或源文件归属）。";
+        btnNo.disabled = true; btnOk.disabled = false;
+      } else {
+        resEl.textContent = '';
+        btnOk.disabled = false; btnNo.disabled = false;
+      }
+    }
+    btnOk.addEventListener('click', function () { apply('ok'); });
+    btnNo.addEventListener('click', function () { apply('no'); });
+  })();
+</script>
+</body>
+</html>
