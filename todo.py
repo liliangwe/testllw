@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import argparse
 import json
+import os
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -30,3 +33,28 @@ class TodoManager:
         items.append(item.to_dict())
         with open(self.filepath, "w", encoding="utf-8") as f:
             json.dump(items, f, ensure_ascii=False, indent=2)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="待办事项记录工具")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    add_parser = subparsers.add_parser("add", help="新增待办事项")
+    add_parser.add_argument("--name", required=True, help="事项名称")
+    add_parser.add_argument("--description", default="", help="事项描述")
+
+    args = parser.parse_args()
+
+    data_file = os.environ.get("TODO_DATA_FILE", str(Path.home() / ".todos.json"))
+    mgr = TodoManager(data_file)
+
+    if args.command == "add":
+        item = TodoItem(name=args.name, description=args.description)
+        mgr.add(item)
+        print(f"已添加待办事项: {item.name}")
+        if item.description:
+            print(f"  描述: {item.description}")
+
+
+if __name__ == "__main__":
+    main()

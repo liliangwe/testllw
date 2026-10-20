@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -68,6 +69,51 @@ class TestTodoManager(unittest.TestCase):
         self.assertFalse(self.filepath.exists())
         mgr.add(TodoItem(name="test"))
         self.assertTrue(self.filepath.exists())
+
+
+class TestTodoCLI(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.datafile = Path(self.tmpdir) / "todos.json"
+        self.env = {**os.environ, "TODO_DATA_FILE": str(self.datafile)}
+
+    def tearDown(self):
+        if self.datafile.exists():
+            self.datafile.unlink()
+        os.rmdir(self.tmpdir)
+
+    def test_add_subcommand_prints_success(self):
+        result = subprocess.run(
+            ["python3", "todo.py", "add", "--name", "买菜", "--description", "去超市"],
+            capture_output=True,
+            text=True,
+            env=self.env,
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("已添加待办事项", result.stdout)
+        self.assertIn("买菜", result.stdout)
+
+    def test_add_without_description_defaults_empty(self):
+        result = subprocess.run(
+            ["python3", "todo.py", "add", "--name", "开会"],
+            capture_output=True,
+            text=True,
+            env=self.env,
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertTrue(self.datafile.exists())
+        with open(self.datafile, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        self.assertEqual(data[0]["description"], "")
+
+    def test_add_missing_name_shows_error(self):
+        result = subprocess.run(
+            ["python3", "todo.py", "add", "--description", "desc only"],
+            capture_output=True,
+            text=True,
+            env=self.env,
+        )
+        self.assertNotEqual(result.returncode, 0)
 
 
 if __name__ == "__main__":
