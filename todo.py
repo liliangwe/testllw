@@ -1,10 +1,7 @@
-from __future__ import annotations
-
 import argparse
 import json
 import os
-import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 
@@ -17,7 +14,7 @@ class TodoItem:
         return {"name": self.name, "description": self.description}
 
     @classmethod
-    def from_dict(cls, d: dict) -> TodoItem:
+    def from_dict(cls, d: dict) -> "TodoItem":
         return cls(name=d["name"], description=d.get("description", ""))
 
 
