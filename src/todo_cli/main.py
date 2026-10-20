@@ -95,6 +95,12 @@ def build_parser() -> argparse.ArgumentParser:
         default="",
         help="事项描述",
     )
+    chat_parser = subparsers.add_parser("chat", help="对话创建待办事项")
+    chat_parser.add_argument(
+        "text",
+        nargs="+",
+        help="自然语言文本",
+    )
     return parser
 
 
@@ -108,17 +114,32 @@ def main() -> None:
             sys.exit(1)
         sys.exit(0)
 
-    if args.command != "add":
-        parser.print_help(sys.stderr)
-        sys.exit(1)
+    if args.command == "add":
+        try:
+            task = add_task(name=args.name, description=args.description)
+        except ValueError as exc:
+            print(f"❌ {exc}", file=sys.stderr)
+            sys.exit(1)
+        except OSError as exc:
+            print(f"❌ 文件写入失败: {exc}", file=sys.stderr)
+            sys.exit(1)
+        print(f"✅ 已添加待办: {task['name']}")
+        return
 
-    try:
-        task = add_task(name=args.name, description=args.description)
-    except ValueError as exc:
-        print(f"❌ {exc}", file=sys.stderr)
-        sys.exit(1)
-    except OSError as exc:
-        print(f"❌ 文件写入失败: {exc}", file=sys.stderr)
-        sys.exit(1)
+    if args.command == "chat":
+        text = " ".join(args.text)
+        from .conversation import ConversationService  # noqa: E402 惰性导入避免循环依赖
+        service = ConversationService()
+        try:
+            task = service.create_from_text(text)
+        except ValueError as exc:
+            print(f"❌ {exc}", file=sys.stderr)
+            sys.exit(1)
+        except OSError as exc:
+            print(f"❌ 文件写入失败: {exc}", file=sys.stderr)
+            sys.exit(1)
+        print(f"✅ 已添加待办: {task['name']}")
+        return
 
-    print(f"✅ 已添加待办: {task['name']}")
+    parser.print_help(sys.stderr)
+    sys.exit(1)
