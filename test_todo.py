@@ -1,5 +1,9 @@
+import json
+import os
+import tempfile
 import unittest
-from todo import TodoItem
+from pathlib import Path
+from todo import TodoItem, TodoManager
 
 
 class TestTodoItem(unittest.TestCase):
@@ -20,6 +24,50 @@ class TestTodoItem(unittest.TestCase):
         item = TodoItem(name="开会")
         self.assertEqual(item.name, "开会")
         self.assertEqual(item.description, "")
+
+
+class TestTodoManager(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.filepath = Path(self.tmpdir) / "todos.json"
+
+    def tearDown(self):
+        if self.filepath.exists():
+            self.filepath.unlink()
+        os.rmdir(self.tmpdir)
+
+    def test_add_to_empty_file_creates_list(self):
+        mgr = TodoManager(str(self.filepath))
+        item = TodoItem(name="买菜", description="去超市")
+        mgr.add(item)
+
+        self.assertTrue(self.filepath.exists())
+        with open(self.filepath, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["name"], "买菜")
+        self.assertEqual(data[0]["description"], "去超市")
+
+    def test_add_appends_to_existing_file(self):
+        existing = [
+            {"name": "写周报", "description": "完成本周总结"},
+        ]
+        with open(self.filepath, "w", encoding="utf-8") as f:
+            json.dump(existing, f, ensure_ascii=False)
+
+        mgr = TodoManager(str(self.filepath))
+        mgr.add(TodoItem(name="开会", description="下午3点站会"))
+
+        with open(self.filepath, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        self.assertEqual(len(data), 2)
+        self.assertEqual(data[1]["name"], "开会")
+
+    def test_file_not_exist_creates_new(self):
+        mgr = TodoManager(str(self.filepath))
+        self.assertFalse(self.filepath.exists())
+        mgr.add(TodoItem(name="test"))
+        self.assertTrue(self.filepath.exists())
 
 
 if __name__ == "__main__":
