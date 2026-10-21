@@ -1,0 +1,74 @@
+diff --git a/test_todo.py b/test_todo.py
+new file mode 100644
+index 0000000..4c1266c
+--- /dev/null
++++ b/test_todo.py
+@@ -0,0 +1,43 @@
++import unittest
++
++from todo import TodoItem, TodoStore
++
++
++class TodoStoreCreateTest(unittest.TestCase):
++    def test_create_returns_item_with_given_name_and_description(self):
++        store = TodoStore()
++        item = store.create("买菜", "去超市买牛奶")
++        self.assertIsInstance(item, TodoItem)
++        self.assertEqual(item.name, "买菜")
++        self.assertEqual(item.description, "去超市买牛奶")
++
++    def test_name_non_empty_enforced(self):
++        store = TodoStore()
++        with self.assertRaises(ValueError):
++            store.create("", "无名称")
++
++    def test_name_non_string_enforced(self):
++        store = TodoStore()
++        with self.assertRaises(ValueError):
++            store.create(123, "数字名称")
++        with self.assertRaises(ValueError):
++            store.create(None, "空名称")
++
++    def test_duplicate_names_still_create(self):
++        store = TodoStore()
++        first = store.create("任务", "第一次")
++        second = store.create("任务", "第二次")
++        self.assertIsNot(first, second)
++        self.assertEqual(first.name, second.name)
++        self.assertEqual(first.description, "第一次")
++        self.assertEqual(second.description, "第二次")
++
++    def test_description_may_be_empty(self):
++        store = TodoStore()
++        item = store.create("只有名称", "")
++        self.assertEqual(item.name, "只有名称")
++        self.assertEqual(item.description, "")
++
++
++if __name__ == "__main__":
++    unittest.main()
+\ No newline at end of file
+diff --git a/todo.py b/todo.py
+new file mode 100644
+index 0000000..4f9f18b
+--- /dev/null
++++ b/todo.py
+@@ -0,0 +1,17 @@
++class TodoItem:
++    """一条待办事项记录，包含 name 和 description 两个字段。"""
++
++    def __init__(self, name, description):
++        self.name = name
++        self.description = description
++
++
++class TodoStore:
++    """内存中的待办事项存储，仅提供创建能力。"""
++
++    def create(self, name, description):
++        if not isinstance(name, str) or not isinstance(description, str):
++            raise ValueError("name 与 description 必须为字符串")
++        if name == "":
++            raise ValueError("name 不能为空")
++        return TodoItem(name, description)
+\ No newline at end of file
