@@ -55,6 +55,13 @@ export const PACE = {
 /* 安全边距（标题安全框，≥96px） */
 export const SAFE_MARGIN = 96;
 
+/* ─────────── 叙事文案（片名 / 金句）─────────── */
+export const STORY = {
+  title: "山鸟在林间飞翔",
+  // 金句文案：brief D5 待用户定稿；当前为拟稿占位，可替换
+  quote: "穿过林间光影，重拾轻盈与自由。",
+} as const;
+
 /* ─────────────────────────── 色板（品牌/氛围统一）─────────────────── */
 export const PALETTE = {
   mistBlue: "#2E4A62", // 晨雾冷青 · S0/S1 主调
