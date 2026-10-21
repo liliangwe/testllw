@@ -1,0 +1,22 @@
+{
+  "name": "mountain-bird-flight",
+  "version": "0.1.0",
+  "private": true,
+  "description": "山鸟在林间飞翔 · Remotion 程序化动画短片",
+  "scripts": {
+    "start": "remotion studio",
+    "upgrade": "remotion upgrade",
+    "render": "remotion render MountainBirdFlight out/video.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.537",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "remotion": "4.0.537"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "typescript": "^5.5.4"
+  }
+}

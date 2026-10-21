@@ -1,0 +1,120 @@
+{
+  "meta": {
+    "produced_by": "数据校验节点",
+    "purpose": "校验 brief.md 涉及的数据（含 benchmark/对比表等）来源是否权威、可核对；无法核实的项明确标出，不编造。",
+    "source_files": ["brief.md", "requirement.md", "workbench.html"],
+    "attachment_checked": "20260904092810-产品空间迭代测分1.md",
+    "checked_at": "2026-10-20",
+    "handoff_id": "hf_190b8bf52cc94b21b3ca792ab0e3017e"
+  },
+
+  "conclusion": {
+    "has_benchmark_or_comparison_table": false,
+    "summary": "brief.md 为氛围/意境片设计稿，明确声明不含 benchmark、评测、性能等数据类内容（brief.md 第四部分『真实数据素材清单』为 N/A）。因此不存在需要从外部权威来源核对的数据表格。brief.md 中的数值均为内部设计/工程常量，可通过算术自洽性验证。"
+  },
+
+  "attachment_assessment": {
+    "file": "20260904092810-产品空间迭代测分1.md",
+    "topic": "产品空间（Product Space）功能迭代的测试分析文档",
+    "relationship_to_brief": "与视频主题（山鸟在林间飞翔）无关。brief.md 已明确标注疑似误挂附件且未引用其中任何数据。",
+    "verdict": "未引用，无需纳入数据校验。若用户本意是用该文档做视频主题，则当前 brief.md 与附件主题存在偏差，需用户确认。"
+  },
+
+  "internal_consistency_checks": [
+    {
+      "id": "C1_duration_sum",
+      "check": "场景时长之和 == 成片总时长",
+      "detail": "S0(4)+S1(8)+S2(14)+S3(12)+S4(12)+S5(6)+留白(4)=60s",
+      "expected": 60,
+      "actual": 60,
+      "pass": true
+    },
+    {
+      "id": "C2_frame_sum",
+      "check": "帧区间之和 == 总帧数",
+      "detail": "120+240+420+360+360+180+120=1800 帧",
+      "expected": 1800,
+      "actual": 1800,
+      "pass": true
+    },
+    {
+      "id": "C3_fps",
+      "check": "30fps × 60s == 1800 帧",
+      "detail": "30 × 60 = 1800",
+      "expected": 1800,
+      "actual": 1800,
+      "pass": true
+    },
+    {
+      "id": "C4_frame_intervals",
+      "check": "各场景标注的帧区间起点/终点连续且跨度与时长一致",
+      "detail": "S0 1–120, S1 121–360, S2 361–780, S3 781–1140, S4 1141–1500, S5 1501–1680, 留白 1681–1800（首尾相接、跨度=秒数×30）",
+      "expected": "连续且一致",
+      "actual": "连续且一致",
+      "pass": true
+    },
+    {
+      "id": "C5_timeline_width",
+      "check": "workbench.html 时间轴各段宽度占比 == 各场景时长/60s",
+      "detail": "6.67%+13.3%+23.3%+20%+20%+10%+6.67%=100%",
+      "expected": 100,
+      "actual": 100,
+      "pass": true
+    },
+    {
+      "id": "C6_scene_file_map",
+      "check": "workbench.html 场景清单与 brief.md 场景/内容/关键组件一致",
+      "detail": "S0–S5 + 留白 的 checklist、转场、氛围与 brief.md 第一节、第三节吻合；源文件清单与 brief.md lens/layer 组件命名一致",
+      "expected": "一致",
+      "actual": "一致",
+      "pass": true
+    }
+  ],
+
+  "external_factual_claims": [
+    {
+      "id": "E1_wingbeat_frequency",
+      "statement": "羽翼扇动 4–6 Hz（写实鸟飞频率）",
+      "category": "自然事实性表述（同时作为动画节拍设计常量）",
+      "verification_status": "unverified",
+      "evidence": "通过公开检索未获取到可直接佐证『4–6 Hz 为通用小型山鸟/鸣禽写实扇动频率』的权威来源；返回结果多为词典/百科类，未给出可引用的鸟种-频率数据表。",
+      "note": "该值作为动画设计参考常量无碍；但作为『写实鸟飞频率』的自然事实性表述缺乏权威来源支撑，且小型鸣禽常见扇动频率通常高于该区间。建议：a) 将其降级为纯设计参考值（保留 4–6 Hz 作为动画表现），或 b) 指定鸟种后按物种资料核定后再落稿。",
+      "recommendation": "需要用户确认：保留为设计参考值 or 指定鸟种核实。"
+    }
+  ],
+
+  "design_constants_not_requiring_external_source": [
+    { "item": "成片时长 60s / 1800 帧 / 30fps", "type": "项目决策（D1）" },
+    { "item": "画幅 1920×1080 16:9", "type": "项目决策（D2）" },
+    { "item": "品牌色板 6 组色值", "type": "设计规范（D3）" },
+    { "item": "字号 72/56/28px、安全边距 ≥96px、羽翼 4–6Hz", "type": "视觉/动效规范" },
+    { "item": "场景叙述（Hook→起飞→穿梭→俯瞰→归林→落版）", "type": "叙事/创意决策" }
+  ],
+
+  "unverified_or_pending_items": [
+    {
+      "id": "U1",
+      "item": "羽翼扇动 4–6 Hz 是否作为『写实』事实性表述保留",
+      "status": "unverified",
+      "action": "请用户确认（见 E1）"
+    },
+    {
+      "id": "U2",
+      "item": "山鸟种类未指定（brief.md D8）",
+      "status": "pending_user_input",
+      "action": "若需真实写实，需用户指定鸟种后补权威来源"
+    },
+    {
+      "id": "U3",
+      "item": "金句文案未定（brief.md D5）",
+      "status": "pending_user_input",
+      "action": "需用户提供或授权拟稿"
+    },
+    {
+      "id": "U4",
+      "item": "是否加入真实数据（如迁徙里程/生态数据/保护等级，brief.md D6）",
+      "status": "pending_user_input",
+      "action": "默认暂无；若加入则触发本节点的数据校验"
+    }
+  ]
+}
