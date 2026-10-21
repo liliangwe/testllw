@@ -12,6 +12,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.text.MessageFormat;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 
 /**
@@ -26,6 +29,9 @@ import javax.imageio.ImageIO;
  * @date 2026/10/21
  */
 public class ImageGenerator {
+
+    /** 日志记录器（JDK 内置 java.util.logging，保持零第三方依赖） */
+    private static final Logger LOGGER = Logger.getLogger(ImageGenerator.class.getName());
 
     /** 默认文字内容 */
     private static final String DEFAULT_TEXT = "Hello World";
@@ -56,6 +62,15 @@ public class ImageGenerator {
 
     /** 渲染字号 */
     private static final int DEFAULT_FONT_SIZE = 36;
+
+    /** 图片尺寸上限（像素），超出视为非法参数，防止 OOM / IllegalArgumentException */
+    private static final int MAX_DIMENSION = 8192;
+
+    /** 长文本自适应缩小的最小字号（下限，避免无限缩小） */
+    private static final int MIN_FONT_SIZE = 8;
+
+    /** 字号缩小步长 */
+    private static final int FONT_SIZE_STEP = 2;
 
     /** 生成 HelloWord 图片，缺省参数自动填充默认值。 */
     public void generateDefault() {
@@ -91,9 +106,13 @@ public class ImageGenerator {
     private void validate(ImageGenRequest request) {
         Integer width = request.getWidth();
         Integer height = request.getHeight();
-        if (width == null || height == null || width <= 0 || height <= 0) {
+        if (width == null || height == null
+            || width <= 0 || height <= 0
+            || width > MAX_DIMENSION || height > MAX_DIMENSION) {
             throw new ImageGenException(
-                ImageGenErrorCodeEnum.INVALID_PARAMETER, "宽、高必须为正整数, width=" + width + ", height=" + height);
+                ImageGenErrorCodeEnum.INVALID_PARAMETER,
+                "宽、高必须为正整数且不超过" + MAX_DIMENSION
+                    + ", width=" + width + ", height=" + height);
         }
     }
 
@@ -121,12 +140,12 @@ public class ImageGenerator {
     }
 
     private void drawCenteredText(Graphics2D graphics, Color color, String text, int width, int height) {
-        Font font = new Font(FONT_FAMILY, Font.PLAIN, DEFAULT_FONT_SIZE);
+        Font font = fitFont(graphics, text, width);
         FontMetrics metrics = graphics.getFontMetrics(font);
         int textWidth = metrics.stringWidth(text);
         int textHeight = metrics.getHeight();
 
-        int x = (width - textWidth) / 2;
+        int x = Math.max(0, (width - textWidth) / 2);
         int y = (height - textHeight) / 2 + metrics.getAscent();
 
         graphics.setFont(font);
@@ -134,10 +153,23 @@ public class ImageGenerator {
         graphics.drawString(text, x, y);
     }
 
+    private Font fitFont(Graphics2D graphics, String text, int maxWidth) {
+        int fontSize = DEFAULT_FONT_SIZE;
+        Font font = new Font(FONT_FAMILY, Font.PLAIN, fontSize);
+        while (fontSize > MIN_FONT_SIZE && graphics.getFontMetrics(font).stringWidth(text) > maxWidth) {
+            fontSize -= FONT_SIZE_STEP;
+            font = new Font(FONT_FAMILY, Font.PLAIN, fontSize);
+        }
+        return font;
+    }
+
     private Color parseColor(String colorHex) {
         try {
             return Color.decode(colorHex);
         } catch (NumberFormatException e) {
+            LOGGER.log(Level.SEVERE,
+                MessageFormat.format("图片颜色参数非法, code={0}, colorHex={1}",
+                    ImageGenErrorCodeEnum.INVALID_PARAMETER.getCode(), colorHex), e);
             throw new ImageGenException(
                 ImageGenErrorCodeEnum.INVALID_PARAMETER, "颜色参数非法: " + colorHex, e);
         }
@@ -150,6 +182,9 @@ public class ImageGenerator {
             try {
                 Files.createDirectories(parent);
             } catch (IOException e) {
+                LOGGER.log(Level.SEVERE,
+                    MessageFormat.format("输出目录创建失败, code={0}, outputPath={1}",
+                        ImageGenErrorCodeEnum.OUTPUT_DIR_NOT_WRITABLE.getCode(), outputPath), e);
                 throw new ImageGenException(
                     ImageGenErrorCodeEnum.OUTPUT_DIR_NOT_WRITABLE, "输出目录不可写: " + outputPath, e);
             }
@@ -159,12 +194,16 @@ public class ImageGenerator {
         try {
             boolean written = ImageIO.write(image, OUTPUT_FORMAT, tmpFile);
             if (!written) {
+                deleteQuietly(tmpFile);
                 throw new ImageGenException(
                     ImageGenErrorCodeEnum.ENCODE_WRITE_FAILED, "无可用编码器写入图片: " + outputPath);
             }
             Files.move(tmpFile.toPath(), target, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
             deleteQuietly(tmpFile);
+            LOGGER.log(Level.SEVERE,
+                MessageFormat.format("图片编码或写盘失败, code={0}, outputPath={1}",
+                    ImageGenErrorCodeEnum.ENCODE_WRITE_FAILED.getCode(), outputPath), e);
             throw new ImageGenException(
                 ImageGenErrorCodeEnum.ENCODE_WRITE_FAILED, "图片编码或写盘失败: " + outputPath, e);
         }
