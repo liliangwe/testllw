@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 从零搭建「人员看板」Web 系统：员工台账增删改查、Excel 批量导入、员工+项目双维度成本预算、敏感操作授权白名单。
+**Goal:** 从零搭建「人员看板」Web 系统：员工台账增删改查、Excel/CSV 批量导入、员工+项目双维度成本预算、敏感操作授权白名单。
 
 **Architecture:** 前后端分离。后端 FastAPI 提供 REST API 并托管前端静态资源；SQLAlchemy 2.0 ORM 映射 5 张关系表（users / employees / projects / employee_cost_budgets / whitelist）。敏感操作（员工删除、批量导入、预算修改/删除）在服务层统一做白名单校验，未命中返回 403。开发用 SQLite，通过 `DATABASE_URL` 可切 PostgreSQL。
 
-**Tech Stack:** Python 3.11+ · FastAPI · SQLAlchemy 2.0 · Pydantic v2 · openpyxl · python-multipart · SQLite(dev)/PostgreSQL · pytest + httpx · 原生 HTML/JS 单页前端。
+**Tech Stack:** Python 3.11+ · FastAPI · SQLAlchemy 2.0 · Pydantic v2 · openpyxl · 标准库 csv · python-multipart · SQLite(dev)/PostgreSQL · pytest + httpx · 原生 HTML/JS 单页前端。
 
 ## Global Constraints
 
@@ -15,8 +15,9 @@
 - 员工删除采用**软删除**（置 `deleted_at` 时间戳），保留历史（spec FR2）。
 - 成本预算为「员工 + 项目」双维度，唯一约束 `(employee_id, project_id, budget_period)`（spec FR4 / §6）。
 - 白名单语义（已确认）：**敏感操作授权白名单**，仅白名单内用户可执行敏感操作「员工删除、批量导入、预算修改/删除」，否则返回 403 并提示（spec FR5）。
-- 批量导入使用 Excel 模板，逐行返回成功/失败明细（spec FR3；Q4 暂定 Excel，字段规范以本计划的模板列为准）。
+- 批量导入支持 **Excel 模板 + CSV 双格式**（spec FR3 / §5 Q4 已确认），逐行返回成功/失败明细；两种格式统一 8 列表头，字段规范见 Task 5。
 - 员工字段范围（Q5 草案）：工号 employee_no、姓名 name、部门 department、职位 position、邮箱 email、手机号 phone、入职日期 hire_date、状态 status。
+- 审计（spec §7 草案 NFR）：初版以软删除保留 `deleted_at` 为最低限度留痕，不单设独立审计表；删除/预算变更的完整操作审计留待后续迭代。
 - 敏感操作枚举常量集中在 `backend/app/services/auth.py` 定义，全项目引用同一常量，禁止写散落字符串。
 - 当前会话为**只读流水线**：禁止 `git commit/push/merge` 等写操作。本计划各任务末尾的 `git commit` 步骤在托管流水线环境下**跳过**（独立手工执行时不跳过）。
 
@@ -1083,7 +1084,7 @@ git commit -m "feat: 项目维护 + 员工/项目双维度成本预算（白名�
 
 ---
 
-## Task 5: 批量导入（模板下载 + Excel 上传）（FR3）
+## Task 5: 批量导入（Excel/CSV 模板下载 + 上传）（FR3）
 
 **Files:**
 - Create: `backend/app/services/importer.py`
@@ -1093,23 +1094,26 @@ git commit -m "feat: 项目维护 + 员工/项目双维度成本预算（白名�
 
 **Interfaces:**
 - Consumes: `Employee` 模型、`SENSITIVE_IMPORT_EMPLOYEE`、`enforce_sensitive`（Task 2）、`Import*` schema（Task 1）。
-- Produces: `build_template()`、`parse_workbook(data: bytes) -> list[dict]`。
+- Produces: `build_template(fmt: str) -> tuple[bytes, str]`、`parse_file(data: bytes, fmt: str) -> list[dict]`（内部调用 `parse_workbook` / `parse_csv`）。
 
-**导入字段（与模板列对齐，规范即 Q4 默认）：** `employee_no`(必填)、`name`(必填)、`department`、`position`、`email`、`phone`、`hire_date`、`status`。首行表头必须完全匹配这 8 列。
+**导入格式与字段：** 支持 `.xlsx` 与 `.csv` 两种格式（由上传文件扩展名自动识别）；两者共用同一 8 列表头，首行表头必须完全匹配：`employee_no`(必填)、`name`(必填)、`department`、`position`、`email`、`phone`、`hire_date`、`status`。
 
 - [ ] **Step 1: 写失败测试**
 
 ```python
 # backend/tests/test_imports.py
+import csv
 import io
 
 from openpyxl import Workbook
+
+HEADERS = ["employee_no", "name", "department", "position", "email", "phone", "hire_date", "status"]
 
 
 def _make_xlsx(rows):
     wb = Workbook()
     ws = wb.active
-    ws.append(["employee_no", "name", "department", "position", "email", "phone", "hire_date", "status"])
+    ws.append(HEADERS)
     for r in rows:
         ws.append(r)
     buf = io.BytesIO()
@@ -1117,10 +1121,25 @@ def _make_xlsx(rows):
     return buf.getvalue()
 
 
+def _make_csv(rows):
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(HEADERS)
+    for r in rows:
+        w.writerow(r)
+    return buf.getvalue().encode("utf-8")
+
+
 def test_download_template(client):
     r = client.get("/api/imports/template", headers={"X-User": "admin"})
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("application/vnd.openxmlformats-officedocument")
+
+
+def test_download_csv_template(client):
+    r = client.get("/api/imports/template", params={"format": "csv"}, headers={"X-User": "admin"})
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/csv")
 
 
 def test_import_requires_whitelist(client):
@@ -1133,7 +1152,7 @@ def test_import_requires_whitelist(client):
 def test_import_success_and_partial_failure(client):
     data = _make_xlsx([
         ["E001", "张三", "研发", "", "", "", "", "active"],
-        ["E002", "李四", "", "", "", "", "", ""],          # 缺 status → 失败
+        ["E002", "李四", "", "", "", "", "", "离职"],        # 非法状态 → 字段校验失败
         ["E001", "王五", "", "", "", "", "", "active"],     # 重复工号 → 失败
     ])
     r = client.post("/api/imports", headers={"X-User": "admin"},
@@ -1143,6 +1162,16 @@ def test_import_success_and_partial_failure(client):
     assert body["total"] == 3 and body["success"] == 1 and body["failed"] == 2
     # E001 已入库
     assert client.get("/api/employees/E001").status_code == 200
+
+
+def test_import_csv_success(client):
+    data = _make_csv([["E010", "赵六", "产品", "", "", "", "2024-03-01", "active"]])
+    r = client.post("/api/imports", headers={"X-User": "admin"},
+                    files={"file": ("t.csv", data, "text/csv")})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] == 1 and body["success"] == 1 and body["failed"] == 0
+    assert client.get("/api/employees/E010").status_code == 200
 ```
 
 - [ ] **Step 2: 运行测试确认失败**
@@ -1154,29 +1183,33 @@ Expected: FAIL（`/api/imports/template`、`/api/imports` 均 404）。
 
 ```python
 # backend/app/services/importer.py
+import csv
 import io
 from datetime import date
 
 from openpyxl import Workbook, load_workbook
 
 HEADERS = ["employee_no", "name", "department", "position", "email", "phone", "hire_date", "status"]
+XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+CSV_MIME = "text/csv"
 
 
-def build_template() -> bytes:
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "员工导入"
-    ws.append(HEADERS)
-    ws.append(["E001", "张三", "研发部", "工程师", "zhangsan@example.com", "13800000000", "2024-01-01", "active"])
-    buf = io.BytesIO()
-    wb.save(buf)
-    return buf.getvalue()
+def _normalize(rec: dict) -> dict:
+    for k in ("employee_no", "name", "department", "position", "email", "phone", "status"):
+        v = rec.get(k)
+        rec[k] = str(v).strip() if v is not None else ""
+    hd = rec.get("hire_date")
+    if isinstance(hd, date):
+        rec["hire_date"] = hd
+    elif isinstance(hd, str) and hd.strip():
+        rec["hire_date"] = date.fromisoformat(hd.strip())
+    else:
+        rec["hire_date"] = None
+    rec["status"] = rec.get("status") or "active"
+    return rec
 
 
-def parse_workbook(data: bytes) -> list[dict]:
-    wb = load_workbook(io.BytesIO(data), data_only=True)
-    ws = wb.active
-    rows = list(ws.iter_rows(values_only=True))
+def _rows_to_records(rows: list) -> list[dict]:
     if not rows:
         return []
     header = [str(c).strip() if c is not None else "" for c in rows[0]]
@@ -1186,48 +1219,75 @@ def parse_workbook(data: bytes) -> list[dict]:
     for row in rows[1:]:
         if row is None or all(c in (None, "") for c in row):
             continue
-        rec = dict(zip(HEADERS, row))
-        for k in ("employee_no", "name", "department", "position", "email", "phone", "status"):
-            v = rec.get(k)
-            rec[k] = str(v).strip() if v is not None else ""
-        hd = rec.get("hire_date")
-        if isinstance(hd, date):
-            rec["hire_date"] = hd
-        elif isinstance(hd, str) and hd.strip():
-            rec["hire_date"] = date.fromisoformat(hd.strip())
-        else:
-            rec["hire_date"] = None
-        rec["status"] = rec.get("status") or "active"
-        out.append(rec)
+        out.append(_normalize(dict(zip(HEADERS, row))))
     return out
+
+
+def build_template(fmt: str = "xlsx") -> tuple[bytes, str]:
+    if fmt == "csv":
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(HEADERS)
+        writer.writerow(["E001", "张三", "研发部", "工程师", "zhangsan@example.com", "13800000000", "2024-01-01", "active"])
+        return buf.getvalue().encode("utf-8-sig"), CSV_MIME
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "员工导入"
+    ws.append(HEADERS)
+    ws.append(["E001", "张三", "研发部", "工程师", "zhangsan@example.com", "13800000000", "2024-01-01", "active"])
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue(), XLSX_MIME
+
+
+def parse_workbook(data: bytes) -> list[dict]:
+    wb = load_workbook(io.BytesIO(data), data_only=True)
+    ws = wb.active
+    return _rows_to_records(list(ws.iter_rows(values_only=True)))
+
+
+def parse_csv(data: bytes) -> list[dict]:
+    text = data.decode("utf-8-sig")
+    return _rows_to_records(list(csv.reader(io.StringIO(text))))
+
+
+def parse_file(data: bytes, fmt: str) -> list[dict]:
+    return parse_csv(data) if fmt == "csv" else parse_workbook(data)
 ```
 
 - [ ] **Step 4: 实现导入路由**
 
 ```python
 # backend/app/routers/imports.py
-from fastapi import APIRouter, Depends, Header, UploadFile, File
+from fastapi import APIRouter, Depends, File, Header, Query, UploadFile
 from fastapi.responses import Response
-from sqlalchemy.orm import Session
 from pydantic import ValidationError
+from sqlalchemy.orm import Session
 
 from ..db import get_db
 from ..models import Employee
 from ..schemas import EmployeeCreate, ImportResult
 from ..services.auth import SENSITIVE_IMPORT_EMPLOYEE, enforce_sensitive, get_current_user
-from ..services.importer import build_template, parse_workbook
+from ..services.importer import build_template, parse_file
 
 router = APIRouter(prefix="/api/imports", tags=["imports"])
 
 
 @router.get("/template")
-def template(x_user: str | None = Header(default=None), db: Session = Depends(get_db)):
+def template(
+    format: str = Query(default="xlsx"),
+    x_user: str | None = Header(default=None),
+    db: Session = Depends(get_db),
+):
     enforce_sensitive(db, get_current_user(db, x_user), SENSITIVE_IMPORT_EMPLOYEE)
-    data = build_template()
+    fmt = format.lower()
+    if fmt not in ("xlsx", "csv"):
+        fmt = "xlsx"
+    data, mime = build_template(fmt)
     return Response(
         content=data,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": 'attachment; filename="employee_import_template.xlsx"'},
+        media_type=mime,
+        headers={"Content-Disposition": f'attachment; filename="employee_import_template.{fmt}"'},
     )
 
 
@@ -1238,14 +1298,18 @@ def import_excel(
     db: Session = Depends(get_db),
 ):
     enforce_sensitive(db, get_current_user(db, x_user), SENSITIVE_IMPORT_EMPLOYEE)
+    filename = (file.filename or "").lower()
+    fmt = "csv" if filename.endswith(".csv") else "xlsx"
     data = file.file.read()
     try:
-        rows = parse_workbook(data)
+        rows = parse_file(data, fmt)
     except ValueError as exc:
         return {"total": 0, "success": 0, "failed": 0, "rows": [{"row_index": 0, "ok": False, "error": str(exc)}]}
 
     results = []
     success = 0
+    # 批量导入内逐行去重：既含库内已有工号，也含本批已入库工号（autoflush=False 下不能依赖查询回读）
+    seen = {e.employee_no for e in db.query(Employee.employee_no).all()}
     for i, rec in enumerate(rows, start=2):  # 第1行是表头
         row_index = i
         employee_no = rec.get("employee_no")
@@ -1258,10 +1322,11 @@ def import_excel(
         if not employee_no or not payload.name:
             results.append({"row_index": row_index, "ok": False, "employee_no": employee_no, "error": "工号/姓名必填"})
             continue
-        if db.query(Employee).filter(Employee.employee_no == employee_no).first():
+        if employee_no in seen:
             results.append({"row_index": row_index, "ok": False, "employee_no": employee_no, "error": "工号已存在"})
             continue
         db.add(Employee(**payload.model_dump()))
+        seen.add(employee_no)
         success += 1
         results.append({"row_index": row_index, "ok": True, "employee_no": employee_no})
 
@@ -1282,13 +1347,13 @@ app.include_router(imports_router.router)
 - [ ] **Step 6: 运行测试确认通过**
 
 Run: `cd backend && python -m pytest tests/test_imports.py -q`
-Expected: PASS（3 passed）。
+Expected: PASS（5 passed）。
 
 - [ ] **Step 7: 提交**（流水线只读，跳过；手工执行时）
 
 ```bash
 git add backend/
-git commit -m "feat: Excel 模板下载与批量导入（白名单 + 逐行结果明细）"
+git commit -m "feat: Excel/CSV 模板下载与批量导入（白名单 + 逐行结果明细）"
 ```
 
 ---
@@ -1328,9 +1393,10 @@ git commit -m "feat: Excel 模板下载与批量导入（白名单 + 逐行结�
         </select>
       </label>
       <button id="btnAdd">新增员工</button>
-      <input type="file" id="fileInput" accept=".xlsx" />
+      <input type="file" id="fileInput" accept=".xlsx,.csv" />
       <button id="btnImport">批量导入</button>
-      <a href="/api/imports/template" id="btnTemplate" class="link">下载模板</a>
+      <button id="btnTemplate">下载Excel模板</button>
+      <button id="btnTemplateCsv">下载CSV模板</button>
       <button id="btnMe">我的身份</button>
     </div>
   </header>
@@ -1461,7 +1527,20 @@ document.getElementById("btnCancel").onclick = closeDlg;
 document.getElementById("btnImport").onclick = importExcel;
 document.getElementById("btnMe").onclick = loadMyRole;
 document.getElementById("btnSearch").onclick = loadList;
-document.getElementById("btnTemplate").href = `/api/imports/template?_=${Date.now()}`;
+async function downloadTemplate(fmt) {
+  try {
+    const resp = await fetch(`${API}/api/imports/template?format=${fmt}`, { headers: { "X-User": userId() } });
+    if (!resp.ok) { const b = await resp.json().catch(() => ({})); throw new Error(b.detail || `HTTP ${resp.status}`); }
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `employee_import_template.${fmt}`;
+    a.click(); URL.revokeObjectURL(url);
+  } catch (err) { alert(err.message); }
+}
+
+document.getElementById("btnTemplate").onclick = () => downloadTemplate("xlsx");
+document.getElementById("btnTemplateCsv").onclick = () => downloadTemplate("csv");
 loadList();
 ```
 
@@ -1606,7 +1685,7 @@ if __name__ == "__main__":
 # 人员看板 Staff Board
 
 员工台账 + 成本预算的 Web 看板。功能：员工 CRUD（软删除、工号唯一、检索分页）、
-Excel 模板批量导入（逐行结果明细）、员工+项目双维度成本预算、敏感操作授权白名单。
+Excel/CSV 模板批量导入（逐行结果明细）、员工+项目双维度成本预算、敏感操作授权白名单。
 
 ## 快速开始
 
@@ -1623,7 +1702,7 @@ cd backend && python -m pytest -q
 
 - backend/app/models.py      数据模型（5 表）
 - backend/app/routers/       REST 路由
-- backend/app/services/      白名单授权 + Excel 导入
+- backend/app/services/      白名单授权 + Excel/CSV 导入
 - backend/app/static/        前端看板（静态托管）
 ```
 
@@ -1649,13 +1728,13 @@ git commit -m "feat: seed 数据 + README + 集成冒烟测试"
 | --- | --- |
 | FR1 员工录入入口 | Task 2（`POST /api/employees`）+ Task 6（前端新增表单） |
 | FR2 CRUD（查/增/改/删，工号唯一、软删除、检索分页） | Task 2（employees 路由 + 测试） |
-| FR3 批量导入（模板、校验、逐行明细） | Task 5（importer + imports 路由） |
+| FR3 批量导入（Excel + CSV 双格式、模板、校验、逐行明细） | Task 5（importer + imports 路由） |
 | FR4 成本预算（员工+项目双维度、唯一约束、按维度聚合） | Task 4（budgets/projects + 测试） |
 | FR5 敏感操作授权白名单 | Task 2（enforce_sensitive）+ Task 3（whitelist 管理） |
 
 **占位符扫描：** 所有代码步骤均给出完整实现，无 TBD/TODO/「类似 Task N」占位。
 
-**类型一致性：** 关键命名跨任务对齐——`SENSITIVE_DELETE_EMPLOYEE`、`SENSITIVE_IMPORT_EMPLOYEE`、`SENSITIVE_BUDGET_WRITE` 均引自 `services/auth.py`；`BudgetListOut` 定义于 Task 4 追加的 schemas 且 budgets 路由已 import；`EmployeeListOut/BudgetListOut` 的 `{total, items}` 结构与路由 return 一致；`get_current_user(db, x_user)`、`enforce_sensitive(db, user, action)` 签名在 Task 2 定义、Task 3/4/5 复用不变量。
+**类型一致性：** 关键命名跨任务对齐——`SENSITIVE_DELETE_EMPLOYEE`、`SENSITIVE_IMPORT_EMPLOYEE`、`SENSITIVE_BUDGET_WRITE` 均引自 `services/auth.py`；`BudgetListOut` 定义于 Task 4 追加的 schemas 且 budgets 路由已 import；`EmployeeListOut/BudgetListOut` 的 `{total, items}` 结构与路由 return 一致；`get_current_user(db, x_user)`、`enforce_sensitive(db, user, action)` 签名在 Task 2 定义、Task 3/4/5 复用不变量；`build_template(fmt)` / `parse_file(data, fmt)` 在 Task 5 Interfaces 声明、导入路由与前端下载动作按同签名调用，`parse_workbook`/`parse_csv` 为 `parse_file` 内部实现不对外暴露。
 
 **共识约定提醒（Global Constraints）：** 删除=软删除；工号唯一；预算唯一 `(employee_id, project_id, budget_period)`；白名单只保护「员工删除/批量导入/预算写」三类敏感操作；导入 8 列模板表头固定。
 
