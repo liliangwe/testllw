@@ -1,0 +1,185 @@
+# Review package: task-1 (new untracked files, git read-only)
+
+## Files changed
+ TodoItem.java | 88 +++
+ TodoService.java | 37 +++
+ TodoApp.java | 22 +++
+
+## Diff
+### TodoItem.java
+diff --git a/TodoItem.java b/TodoItem.java
+new file mode 100644
+index 0000000..40d3698
+--- /dev/null
++++ b/TodoItem.java
+@@ -0,0 +1,89 @@
++import java.time.Instant;
++
++/**
++ * 待办事项实体
++ *
++ * <p>表示一条待办事项，包含全局自增编号（id）、事项名称（name）、
++ * 事项描述（description）与创建时间（createdAt）。</p>
++ *
++ * @author AiWork
++ */
++public class TodoItem {
++
++    /** 全局自增序号生成器 */
++    private static long nextId = 1L;
++
++    /** 待办事项编号 */
++    private final long id;
++
++    /** 事项名称（必填） */
++    private final String name;
++
++    /** 事项描述（允许为空，统一 trim） */
++    private final String description;
++
++    /** 创建时间 */
++    private final Instant createdAt;
++
++    /**
++     * 构造一条待办事项
++     *
++     * @param name        事项名称，null 或空白将抛出 IllegalArgumentException
++     * @param description 事项描述，允许为 null 或空白，统一 trim
++     */
++    TodoItem(String name, String description) {
++        if (name == null || name.trim().isEmpty()) {
++            throw new IllegalArgumentException("name 不能为 null 或空白");
++        }
++        this.id = nextId++;
++        this.name = name;
++        this.description = description == null ? "" : description.trim();
++        this.createdAt = Instant.now();
++    }
++
++    /**
++     * 获取待办事项编号
++     *
++     * @return 编号
++     */
++    public long getId() {
++        return id;
++    }
++
++    /**
++     * 获取事项名称
++     *
++     * @return 事项名称
++     */
++    public String getName() {
++        return name;
++    }
++
++    /**
++     * 获取事项描述
++     *
++     * @return 事项描述（可为空字符串）
++     */
++    public String getDescription() {
++        return description;
++    }
++
++    /**
++     * 获取创建时间
++     *
++     * @return 创建时间
++     */
++    public Instant getCreatedAt() {
++        return createdAt;
++    }
++
++    /**
++     * 返回待办事项的字符串表示
++     *
++     * @return 待办事项字符串
++     */
++    @Override
++    public String toString() {
++        return "TodoItem{id=" + id + ", name=\"" + name + "\", description=\"" + description + "\"}";
++    }
++}
+\ No newline at end of file
+
+### TodoService.java
+diff --git a/TodoService.java b/TodoService.java
+new file mode 100644
+index 0000000..ec50229
+--- /dev/null
++++ b/TodoService.java
+@@ -0,0 +1,38 @@
++import java.util.ArrayList;
++import java.util.Collections;
++import java.util.List;
++
++/**
++ * 待办事项服务
++ *
++ * <p>提供待办事项的新增（create）与只读查询（listAll）能力。</p>
++ *
++ * @author AiWork
++ */
++public class TodoService {
++
++    /** 当前全部待办事项 */
++    private final List<TodoItem> items = new ArrayList<>();
++
++    /**
++     * 新增一条待办事项
++     *
++     * @param name        事项名称（必填，null 或空白将抛出 IllegalArgumentException）
++     * @param description 事项描述（允许为空）
++     * @return 新建的待办事项
++     */
++    public TodoItem create(String name, String description) {
++        TodoItem item = new TodoItem(name, description);
++        items.add(item);
++        return item;
++    }
++
++    /**
++     * 以只读视图返回当前全部待办事项
++     *
++     * @return 当前全部待办事项的只读列表
++     */
++    public List<TodoItem> listAll() {
++        return Collections.unmodifiableList(new ArrayList<>(items));
++    }
++}
+\ No newline at end of file
+
+### TodoApp.java
+diff --git a/TodoApp.java b/TodoApp.java
+new file mode 100644
+index 0000000..4cbf360
+--- /dev/null
++++ b/TodoApp.java
+@@ -0,0 +1,23 @@
++/**
++ * 待办事项应用入口
++ *
++ * <p>演示最小闭环：新增一条待办事项并打印创建结果（id/name/description）。</p>
++ *
++ * @author AiWork
++ */
++public class TodoApp {
++
++    /**
++     * 程序入口方法
++     *
++     * @param args 命令行参数（未使用）
++     */
++    public static void main(String[] args) {
++        TodoService service = new TodoService();
++        TodoItem item = service.create("购买牛奶", "低脂牛奶一箱");
++
++        System.out.println("id=" + item.getId()
++                + ", name=" + item.getName()
++                + ", description=" + item.getDescription());
++    }
++}
+\ No newline at end of file
+
