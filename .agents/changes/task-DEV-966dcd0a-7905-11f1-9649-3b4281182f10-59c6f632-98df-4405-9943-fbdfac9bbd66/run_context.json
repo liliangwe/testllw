@@ -23,13 +23,12 @@
   ],
   "decisions": {
     "product_form": {"value": "Web 前后端 + 关系型数据库", "status": "confirmed"},
+    "import_format": {"value": "Excel 模板 + CSV 双支持", "status": "confirmed"},
+    "employee_fields": {"value": "工号/姓名/部门/职位/邮箱/手机号/入职日期/在职状态（无增删）", "status": "confirmed"},
     "whitelist_semantics": {"value": "敏感操作授权白名单", "status": "confirmed", "sensitive_actions": ["员工删除", "批量导入", "成本预算修改/删除"]},
     "cost_budget_granularity": {"value": "员工 + 项目双维度", "status": "confirmed"}
   },
-  "open_questions": [
-    {"id": "Q4", "topic": "批量导入格式", "assumption": "Excel 模板导入（可扩展 CSV）", "status": "default"},
-    {"id": "Q5", "topic": "员工基本信息字段范围", "assumption": "工号/姓名/部门/职位/邮箱/手机号/入职日期/状态", "status": "default"}
-  ],
+  "open_questions": [],
   "data_model_draft": [
     "employee(员工主表: id, employee_no, name, department, position, email, phone, hire_date, status, ...)",
     "employee_cost_budget(员工成本预算表: id, employee_id, project_id, cost_center, budget_amount, currency, budget_period, start_date, end_date, remark, ...)",
