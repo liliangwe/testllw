@@ -1,0 +1,16 @@
+/* backend/app/static/style.css */
+body { font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; margin: 24px; color: #1f2933; }
+header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+h1 { font-size: 22px; margin: 0; }
+.toolbar, #summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #d9dee4; padding: 6px 10px; text-align: left; font-size: 14px; }
+th { background: #f4f6f8; }
+button, .link { padding: 6px 12px; border: 1px solid #b8c2cc; background: #fff; border-radius: 4px; cursor: pointer; font-size: 14px; }
+button:hover, .link:hover { background: #eef2f6; }
+.link { text-decoration: none; color: #1677ff; }
+dialog { border: 1px solid #d9dee4; border-radius: 8px; padding: 20px; min-width: 360px; }
+dialog form { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
+dialog label { display: contents; }
+.actions { grid-column: 1 / -1; display: flex; gap: 8px; justify-content: flex-end; }
+.toast { color: #c0392b; }
