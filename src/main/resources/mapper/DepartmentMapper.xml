@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.organization.dao.mapper.DepartmentMapper">
+
+    <resultMap id="departmentResultMap" type="com.example.organization.model.entity.DepartmentDO">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="tenant_id" property="tenantId" jdbcType="BIGINT"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="parent_id" property="parentId" jdbcType="BIGINT"/>
+        <result column="path" property="path" jdbcType="VARCHAR"/>
+        <result column="sort_order" property="sortOrder" jdbcType="INTEGER"/>
+        <result column="status" property="status" jdbcType="INTEGER"/>
+        <result column="is_deleted" property="deleted" jdbcType="TINYINT"/>
+        <result column="gmt_create" property="gmtCreate" jdbcType="TIMESTAMP"/>
+        <result column="gmt_modified" property="gmtModified" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="baseColumn">
+        id, tenant_id, name, parent_id, path, sort_order, status, is_deleted, gmt_create, gmt_modified
+    </sql>
+
+    <select id="selectAll" resultMap="departmentResultMap">
+        SELECT <include refid="baseColumn"/>
+        FROM org_department
+        WHERE tenant_id = #{tenantId} AND is_deleted = #{deleted}
+        ORDER BY sort_order ASC, id ASC
+    </select>
+
+    <select id="selectById" resultMap="departmentResultMap">
+        SELECT <include refid="baseColumn"/>
+        FROM org_department
+        WHERE id = #{id} AND tenant_id = #{tenantId} AND is_deleted = #{deleted}
+    </select>
+
+    <select id="selectByParentId" resultMap="departmentResultMap">
+        SELECT <include refid="baseColumn"/>
+        FROM org_department
+        WHERE parent_id = #{parentId} AND tenant_id = #{tenantId} AND is_deleted = #{deleted}
+        ORDER BY sort_order ASC, id ASC
+    </select>
+
+    <select id="selectByPathPrefix" resultMap="departmentResultMap">
+        SELECT <include refid="baseColumn"/>
+        FROM org_department
+        WHERE tenant_id = #{tenantId} AND is_deleted = #{deleted} AND path LIKE CONCAT(#{pathPrefix}, '%')
+        ORDER BY sort_order ASC, id ASC
+    </select>
+
+    <update id="updateParentAndPath">
+        UPDATE org_department
+        SET parent_id = #{parentId},
+            path = #{path},
+            gmt_modified = NOW()
+        WHERE id = #{id} AND tenant_id = #{tenantId}
+    </update>
+
+    <update id="batchUpdatePath">
+        UPDATE org_department
+        SET path = CONCAT(#{newPrefix}, SUBSTRING(path, LENGTH(#{oldPrefix}) + 1)),
+            gmt_modified = NOW()
+        WHERE tenant_id = #{tenantId}
+          AND is_deleted = #{deleted}
+          AND path LIKE CONCAT(#{oldPrefix}, '%')
+    </update>
+
+    <update id="logicDelete">
+        UPDATE org_department
+        SET is_deleted = 1,
+            gmt_modified = NOW()
+        WHERE id = #{id} AND tenant_id = #{tenantId}
+    </update>
+
+    <select id="countByParentId" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM org_department
+        WHERE parent_id = #{parentId} AND tenant_id = #{tenantId} AND is_deleted = #{deleted}
+    </select>
+</mapper>

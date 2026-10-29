@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.organization.dao.mapper.EmployeeMapper">
+
+    <resultMap id="employeeResultMap" type="com.example.organization.model.entity.EmployeeDO">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="tenant_id" property="tenantId" jdbcType="BIGINT"/>
+        <result column="name" property="name" jdbcType="VARCHAR"/>
+        <result column="employee_no" property="employeeNo" jdbcType="VARCHAR"/>
+        <result column="phone" property="phone" jdbcType="VARCHAR"/>
+        <result column="dept_id" property="deptId" jdbcType="BIGINT"/>
+        <result column="position" property="position" jdbcType="VARCHAR"/>
+        <result column="status" property="status" jdbcType="INTEGER"/>
+        <result column="version" property="version" jdbcType="BIGINT"/>
+        <result column="is_deleted" property="deleted" jdbcType="TINYINT"/>
+        <result column="gmt_create" property="gmtCreate" jdbcType="TIMESTAMP"/>
+        <result column="gmt_modified" property="gmtModified" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="baseColumn">
+        id, tenant_id, name, employee_no, phone, dept_id, position, status, version, is_deleted, gmt_create, gmt_modified
+    </sql>
+
+    <select id="selectById" resultMap="employeeResultMap">
+        SELECT <include refid="baseColumn"/>
+        FROM org_employee
+        WHERE id = #{id} AND tenant_id = #{tenantId} AND is_deleted = #{deleted}
+    </select>
+
+    <select id="selectByEmployeeNo" resultMap="employeeResultMap">
+        SELECT <include refid="baseColumn"/>
+        FROM org_employee
+        WHERE employee_no = #{employeeNo} AND tenant_id = #{tenantId} AND is_deleted = #{deleted}
+    </select>
+
+    <select id="selectByPhone" resultMap="employeeResultMap">
+        SELECT <include refid="baseColumn"/>
+        FROM org_employee
+        WHERE phone = #{phone} AND tenant_id = #{tenantId} AND is_deleted = #{deleted}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO org_employee (
+            tenant_id, name, employee_no, phone, dept_id, position,
+            status, version, is_deleted, gmt_create, gmt_modified
+        ) VALUES (
+            #{tenantId}, #{name}, #{employeeNo}, #{phone}, #{deptId}, #{position},
+            #{status}, #{version}, #{deleted}, NOW(), NOW()
+        )
+    </insert>
+
+    <update id="updateByVersion">
+        UPDATE org_employee
+        SET dept_id = #{deptId},
+            position = #{position},
+            version = version + 1,
+            gmt_modified = NOW()
+        WHERE id = #{id}
+          AND tenant_id = #{tenantId}
+          AND version = #{version}
+          AND is_deleted = 0
+          AND status = 1
+    </update>
+
+    <update id="updateResign">
+        UPDATE org_employee
+        SET status = 0,
+            is_deleted = 1,
+            gmt_modified = NOW()
+        WHERE id = #{id}
+          AND tenant_id = #{tenantId}
+          AND is_deleted = 0
+          AND status = 1
+    </update>
+
+    <select id="countByCondition" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM org_employee
+        WHERE tenant_id = #{tenantId}
+          AND is_deleted = 0
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        <if test="deptId != null">
+            AND dept_id = #{deptId}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (name LIKE CONCAT('%', #{keyword}, '%')
+                 OR employee_no LIKE CONCAT('%', #{keyword}, '%')
+                 OR phone LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+    </select>
+
+    <select id="listByCondition" resultMap="employeeResultMap">
+        SELECT <include refid="baseColumn"/>
+        FROM org_employee
+        WHERE tenant_id = #{tenantId}
+          AND is_deleted = 0
+        <if test="status != null">
+            AND status = #{status}
+        </if>
+        <if test="deptId != null">
+            AND dept_id = #{deptId}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (name LIKE CONCAT('%', #{keyword}, '%')
+                 OR employee_no LIKE CONCAT('%', #{keyword}, '%')
+                 OR phone LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        ORDER BY gmt_create DESC
+        LIMIT #{offset}, #{size}
+    </select>
+</mapper>
