@@ -1,6 +1,7 @@
 package com.example.organization.service.impl;
 
 import com.example.organization.common.BizException;
+import com.example.organization.common.TenantContext;
 import com.example.organization.dao.mapper.DepartmentMapper;
 import com.example.organization.dao.mapper.EmployeeMapper;
 import com.example.organization.dao.mapper.TransferRecordMapper;
@@ -142,24 +143,29 @@ class EmployeeServiceImplTest {
     @Test
     @DisplayName("调动成功时，应更新员工并记录调动历史")
     void should_transfer_employee_successfully() {
-        // Arrange
-        TransferEmployeeRequest request = new TransferEmployeeRequest();
-        request.setNewDeptId(3L);
-        request.setNewPosition("架构师");
-        request.setReason("业务调整");
+        TenantContext.setUserId(999L);
+        try {
+            // Arrange
+            TransferEmployeeRequest request = new TransferEmployeeRequest();
+            request.setNewDeptId(3L);
+            request.setNewPosition("架构师");
+            request.setReason("业务调整");
 
-        when(employeeMapper.selectById(100L, TENANT_ID, Boolean.FALSE)).thenReturn(activeEmployee);
-        when(departmentMapper.selectById(3L, TENANT_ID, Boolean.FALSE)).thenReturn(new DepartmentDO());
-        when(employeeMapper.updateByVersion(any(EmployeeDO.class))).thenReturn(1);
-        when(transferRecordMapper.insert(any())).thenReturn(1);
+            when(employeeMapper.selectById(100L, TENANT_ID, Boolean.FALSE)).thenReturn(activeEmployee);
+            when(departmentMapper.selectById(3L, TENANT_ID, Boolean.FALSE)).thenReturn(new DepartmentDO());
+            when(employeeMapper.updateByVersion(any(EmployeeDO.class))).thenReturn(1);
+            when(transferRecordMapper.insert(any())).thenReturn(1);
 
-        // Act
-        employeeService.transferEmployee(100L, request, TENANT_ID);
+            // Act
+            employeeService.transferEmployee(100L, request, TENANT_ID);
 
-        // Assert
-        verify(employeeMapper, times(1)).updateByVersion(any(EmployeeDO.class));
-        verify(transferRecordMapper, times(1)).insert(any());
-        verify(approvalServiceClient, times(1)).updateDefaultApprover(100L, 3L);
+            // Assert
+            verify(employeeMapper, times(1)).updateByVersion(any(EmployeeDO.class));
+            verify(transferRecordMapper, times(1)).insert(any());
+            verify(approvalServiceClient, times(1)).updateDefaultApprover(100L, 3L);
+        } finally {
+            TenantContext.clear();
+        }
     }
 
     @Test
@@ -202,7 +208,8 @@ class EmployeeServiceImplTest {
         verify(authServiceClient, times(1)).releaseLicense(100L);
     }
 
-    private EmployeeDO buildEmployee(Long id, String employeeNo, String phone, Long deptId, String position, Long version) {
+    private EmployeeDO buildEmployee(Long id, String employeeNo, String phone,
+                                     Long deptId, String position, Long version) {
         EmployeeDO employee = new EmployeeDO();
         employee.setId(id);
         employee.setEmployeeNo(employeeNo);

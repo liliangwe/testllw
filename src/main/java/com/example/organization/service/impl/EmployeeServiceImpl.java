@@ -3,6 +3,7 @@ package com.example.organization.service.impl;
 import com.example.organization.common.BizException;
 import com.example.organization.common.ErrorCodeEnum;
 import com.example.organization.common.PageResult;
+import com.example.organization.common.TenantContext;
 import com.example.organization.dao.mapper.DepartmentMapper;
 import com.example.organization.dao.mapper.EmployeeMapper;
 import com.example.organization.dao.mapper.TransferRecordMapper;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.List;
@@ -40,6 +42,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     private static final Boolean NOT_DELETED = Boolean.FALSE;
     private static final Integer EMPLOYEE_STATUS_ACTIVE = 1;
     private static final Long INITIAL_VERSION = 0L;
+    private static final int MAX_PAGE_SIZE = 200;
 
     private final EmployeeMapper employeeMapper;
     private final DepartmentMapper departmentMapper;
@@ -106,6 +109,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public PageResult<EmployeeVO> listEmployees(EmployeeQueryRequest query, Long tenantId) {
         query.setTenantId(tenantId);
+        query.setSize(Math.min(query.getSize(), MAX_PAGE_SIZE));
         long total = employeeMapper.countByCondition(query);
         if (total == 0) {
             return PageResult.empty();
@@ -157,8 +161,8 @@ public class EmployeeServiceImpl implements EmployeeService {
         record.setNewDeptId(request.getNewDeptId());
         record.setNewPosition(request.getNewPosition());
         record.setReason(request.getReason());
-        record.setOperatorId(0L);
-        record.setTransferTime(LocalDateTime.now());
+        record.setOperatorId(TenantContext.getUserId());
+        record.setTransferTime(LocalDateTime.now(ZoneId.of("Asia/Shanghai")));
         record.setDeleted(Boolean.FALSE);
         transferRecordMapper.insert(record);
 

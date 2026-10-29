@@ -2,6 +2,7 @@ package com.example.organization.controller;
 
 import com.example.organization.common.ApiResponse;
 import com.example.organization.common.PageResult;
+import com.example.organization.common.TenantContext;
 import com.example.organization.model.dto.EmployeeVO;
 import com.example.organization.model.dto.UniqueCheckResponse;
 import com.example.organization.model.request.CreateEmployeeRequest;
@@ -34,42 +35,36 @@ public class EmployeeController {
 
     @GetMapping("/check")
     public ApiResponse<UniqueCheckResponse> check(@RequestParam String field,
-                                                  @RequestParam String value,
-                                                  @RequestParam(required = false, defaultValue = "1") Long tenantId) {
-        return ApiResponse.ok(employeeService.checkUnique(field, value, tenantId));
+                                                  @RequestParam String value) {
+        return ApiResponse.ok(employeeService.checkUnique(field, value, TenantContext.getTenantId()));
     }
 
     @PostMapping
-    public ApiResponse<Long> create(@RequestBody @Valid CreateEmployeeRequest request,
-                                    @RequestParam(required = false, defaultValue = "1") Long tenantId) {
-        return ApiResponse.ok(employeeService.createEmployee(request, tenantId));
+    public ApiResponse<Long> create(@RequestBody @Valid CreateEmployeeRequest request) {
+        return ApiResponse.ok(employeeService.createEmployee(request, TenantContext.getTenantId()));
     }
 
     @GetMapping
-    public ApiResponse<PageResult<EmployeeVO>> list(EmployeeQueryRequest query,
-                                                  @RequestParam(required = false, defaultValue = "1") Long tenantId) {
-        return ApiResponse.ok(employeeService.listEmployees(query, tenantId));
+    public ApiResponse<PageResult<EmployeeVO>> list(EmployeeQueryRequest query) {
+        return ApiResponse.ok(employeeService.listEmployees(query, TenantContext.getTenantId()));
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<EmployeeVO> getById(@PathVariable Long id,
-                                           @RequestParam(required = false, defaultValue = "1") Long tenantId) {
-        return ApiResponse.ok(employeeService.getEmployeeById(id, tenantId));
+    public ApiResponse<EmployeeVO> getById(@PathVariable Long id) {
+        return ApiResponse.ok(employeeService.getEmployeeById(id, TenantContext.getTenantId()));
     }
 
     @PostMapping("/{id}/transfer")
     public ApiResponse<Void> transfer(@PathVariable Long id,
-                                      @RequestBody @Valid TransferEmployeeRequest request,
-                                      @RequestParam(required = false, defaultValue = "1") Long tenantId) {
-        employeeService.transferEmployee(id, request, tenantId);
+                                      @RequestBody @Valid TransferEmployeeRequest request) {
+        employeeService.transferEmployee(id, request, TenantContext.getTenantId());
         return ApiResponse.ok();
     }
 
     @PutMapping("/{id}/resign")
     public ApiResponse<Void> resign(@PathVariable Long id,
-                                    @RequestBody @Valid ResignEmployeeRequest request,
-                                    @RequestParam(required = false, defaultValue = "1") Long tenantId) {
-        employeeService.resignEmployee(id, request, tenantId);
+                                    @RequestBody @Valid ResignEmployeeRequest request) {
+        employeeService.resignEmployee(id, request, TenantContext.getTenantId());
         return ApiResponse.ok();
     }
 }

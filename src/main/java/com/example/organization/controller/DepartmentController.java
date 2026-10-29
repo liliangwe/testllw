@@ -1,6 +1,7 @@
 package com.example.organization.controller;
 
 import com.example.organization.common.ApiResponse;
+import com.example.organization.common.TenantContext;
 import com.example.organization.model.dto.DepartmentVO;
 import com.example.organization.model.request.MoveDepartmentRequest;
 import com.example.organization.service.DepartmentService;
@@ -11,7 +12,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -30,28 +30,25 @@ public class DepartmentController {
     }
 
     @GetMapping("/tree")
-    public ApiResponse<List<DepartmentVO>> getTree(@RequestParam(required = false, defaultValue = "1") Long tenantId) {
-        return ApiResponse.ok(departmentService.getDepartmentTree(tenantId));
+    public ApiResponse<List<DepartmentVO>> getTree() {
+        return ApiResponse.ok(departmentService.getDepartmentTree(TenantContext.getTenantId()));
     }
 
     @GetMapping("/{id}/children")
-    public ApiResponse<List<DepartmentVO>> getChildren(@PathVariable Long id,
-                                                         @RequestParam(required = false, defaultValue = "1") Long tenantId) {
-        return ApiResponse.ok(departmentService.getChildren(id, tenantId));
+    public ApiResponse<List<DepartmentVO>> getChildren(@PathVariable Long id) {
+        return ApiResponse.ok(departmentService.getChildren(id, TenantContext.getTenantId()));
     }
 
     @PutMapping("/{id}/move")
     public ApiResponse<Void> move(@PathVariable Long id,
-                                    @RequestBody @Valid MoveDepartmentRequest request,
-                                    @RequestParam(required = false, defaultValue = "1") Long tenantId) {
-        departmentService.moveDepartment(id, request, tenantId);
+                                  @RequestBody @Valid MoveDepartmentRequest request) {
+        departmentService.moveDepartment(id, request, TenantContext.getTenantId());
         return ApiResponse.ok();
     }
 
     @DeleteMapping("/{id}")
-    public ApiResponse<Void> delete(@PathVariable Long id,
-                                    @RequestParam(required = false, defaultValue = "1") Long tenantId) {
-        departmentService.deleteDepartment(id, tenantId);
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        departmentService.deleteDepartment(id, TenantContext.getTenantId());
         return ApiResponse.ok();
     }
 }
