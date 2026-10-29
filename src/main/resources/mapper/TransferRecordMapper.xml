@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.organization.dao.mapper.TransferRecordMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO org_transfer_record (
+            tenant_id, employee_id, old_dept_id, new_dept_id, new_position,
+            reason, operator_id, transfer_time, gmt_create, gmt_modified
+        ) VALUES (
+            #{tenantId}, #{employeeId}, #{oldDeptId}, #{newDeptId}, #{newPosition},
+            #{reason}, #{operatorId}, #{transferTime}, NOW(), NOW()
+        )
+    </insert>
+</mapper>
