@@ -1,0 +1,11 @@
+{
+  "task_id": "DEV-d885ee0d-78e2-11f1-8f3f-75954cb1c56f-749cf78f-b50a-4a5e-8348-79b1e94cf367",
+  "stage": "review",
+  "job": "代码评审",
+  "blocker_count": 0,
+  "p1_count": 2,
+  "p2_count": 4,
+  "report": ".agents/20261030-分别写三个接口helloworld_哈希/cr_report.md",
+  "reviewed_at": "2026-10-30",
+  "summary": "29 个 Java 文件（+2294 行）结构化审查：功能 F01-F08 与 design.md 全量对齐，跨仓接口契约（W01-W05）前后端一致；无 P0 阻塞；P1 为 CORS 通配（WebConfig:32）与 LocalDateTime 默认时区（6 处）。scan-all-rules.sh 预扫 13 项命中，G16.2 五项经人工复核 3 项误报、2 项降级 P2。"
+}
