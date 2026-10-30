@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.track.mapper.ApiInvokeTrackMapper">
+
+    <resultMap id="BaseResultMap" type="com.example.demo.track.entity.ApiInvokeTrack">
+        <id column="id" property="id"/>
+        <result column="api_code" property="apiCode"/>
+        <result column="api_path" property="apiPath"/>
+        <result column="caller_id" property="callerId"/>
+        <result column="caller_name" property="callerName"/>
+        <result column="person_type" property="personType"/>
+        <result column="person_level" property="personLevel"/>
+        <result column="person_dept" property="personDept"/>
+        <result column="invoke_result" property="invokeResult"/>
+        <result column="cost_ms" property="costMs"/>
+        <result column="invoke_time" property="invokeTime"/>
+        <result column="gmt_create" property="gmtCreate"/>
+        <result column="gmt_modified" property="gmtModified"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.example.demo.track.entity.ApiInvokeTrack"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO api_invoke_track
+        (api_code, api_path, caller_id, caller_name, person_type, person_level,
+         person_dept, invoke_result, cost_ms, invoke_time)
+        VALUES
+        (#{apiCode}, #{apiPath}, #{callerId}, #{callerName}, #{personType}, #{personLevel},
+         #{personDept}, #{invokeResult}, #{costMs}, #{invokeTime})
+    </insert>
+
+    <sql id="conditionSql">
+        <where>
+            <if test="apiCode != null and apiCode != ''">
+                AND api_code = #{apiCode}
+            </if>
+            <if test="startTime != null">
+                AND invoke_time &gt;= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND invoke_time &lt;= #{endTime}
+            </if>
+        </where>
+    </sql>
+
+    <select id="countByCondition" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM api_invoke_track
+        <include refid="conditionSql"/>
+    </select>
+
+    <select id="countTrendByDay" resultType="java.util.Map">
+        SELECT DATE_FORMAT(invoke_time, '%Y-%m-%d') AS date, COUNT(*) AS count
+        FROM api_invoke_track
+        <include refid="conditionSql"/>
+        GROUP BY DATE_FORMAT(invoke_time, '%Y-%m-%d')
+        ORDER BY date
+    </select>
+
+    <!-- dimensionColumn 仅来源于 StatsDimension 枚举白名单，禁止使用 ${} 拼接用户输入 -->
+    <select id="countByDimension" resultType="java.util.Map">
+        SELECT ${dimensionColumn} AS dimensionValue, COUNT(*) AS count
+        FROM api_invoke_track
+        <include refid="conditionSql"/>
+        GROUP BY ${dimensionColumn}
+        ORDER BY count DESC
+    </select>
+</mapper>
